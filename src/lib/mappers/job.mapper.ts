@@ -1,5 +1,5 @@
 import { PostJobFormValues } from "@/lib/validations/frontend/jobPost.schema";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@prisma/client";
 /**
  * Prisma-safe Job type with relations
  */

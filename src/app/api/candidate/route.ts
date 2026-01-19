@@ -40,62 +40,62 @@ export async function POST(req: Request) {
   }
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const candidateId = params.id;
-    const body = await req.json();
+// export async function PATCH(
+//   req: Request,
+//   { params }: { params: { id: string } }
+// ) {
+//   try {
+//     const candidateId = params.id;
+//     const body = await req.json();
 
-    const validatedData =
-      candidateBackendPatchSchema.parse(body);
+//     const validatedData =
+//       candidateBackendPatchSchema.parse(body);
 
-    if (Object.keys(validatedData).length === 0) {
-      return NextResponse.json(
-        { message: "No fields provided to update" },
-        { status: 400 }
-      );
-    }
+//     if (Object.keys(validatedData).length === 0) {
+//       return NextResponse.json(
+//         { message: "No fields provided to update" },
+//         { status: 400 }
+//       );
+//     }
 
-    // 🔐 Check permission
-    const candidate = await prisma.candidate.findUnique({
-      where: { id: candidateId },
-      select: { canUpdateDetails: true },
-    });
+//     // 🔐 Check permission
+//     const candidate = await prisma.candidate.findUnique({
+//       where: { id: candidateId },
+//       select: { canUpdateDetails: true },
+//     });
 
-    if (!candidate?.canUpdateDetails) {
-      return NextResponse.json(
-        { message: "You can update details only once" },
-        { status: 403 }
-      );
-    }
+//     if (!candidate?.canUpdateDetails) {
+//       return NextResponse.json(
+//         { message: "You can update details only once" },
+//         { status: 403 }
+//       );
+//     }
 
-    // ✅ Update + lock further updates
-    const updatedCandidate = await prisma.candidate.update({
-      where: { id: candidateId },
-      data: {
-        ...validatedData,
-        canUpdateDetails: false,
-      },
-    });
+//     // ✅ Update + lock further updates
+//     const updatedCandidate = await prisma.candidate.update({
+//       where: { id: candidateId },
+//       data: {
+//         ...validatedData,
+//         canUpdateDetails: false,
+//       },
+//     });
 
-    return NextResponse.json(
-      { success: true, candidate: updatedCandidate },
-      { status: 200 }
-    );
-  } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { message: "Invalid input", issues: error.issues },
-        { status: 400 }
-      );
-    }
+//     return NextResponse.json(
+//       { success: true, candidate: updatedCandidate },
+//       { status: 200 }
+//     );
+//   } catch (error) {
+//     if (error instanceof ZodError) {
+//       return NextResponse.json(
+//         { message: "Invalid input", issues: error.issues },
+//         { status: 400 }
+//       );
+//     }
 
-    return NextResponse.json(
-      { message: "Failed to update candidate" },
-      { status: 500 }
-    );
-  }
-}
+//     return NextResponse.json(
+//       { message: "Failed to update candidate" },
+//       { status: 500 }
+//     );
+//   }
+// }
 

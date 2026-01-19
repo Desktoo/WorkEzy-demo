@@ -2,13 +2,19 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
+
+type FilteringQuestionInput = {
+  question: string;
+  expectedAnswer: "yes" | "no";
+};
+
 export async function GET(
   _req: Request,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
     const { userId } = await auth();
-    const { jobId } = params;
+    const { jobId } = await params;
 
     if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -101,6 +107,8 @@ export async function PATCH(
       return NextResponse.json({ message: "Job not found" }, { status: 404 });
     }
 
+    
+
     const updatedJob = await prisma.job.update({
       where: { id: jobId },
       data: {
@@ -121,7 +129,7 @@ export async function PATCH(
 
         filteringQuestions: {
           deleteMany: { jobId },
-          create: (body.filteringQuestions ?? []).map((q) => ({
+          create: (body.filteringQuestions ?? []).map((q: FilteringQuestionInput) => ({
             question: q.question,
             expectedAnswer: q.expectedAnswer === "no" ? "no" : "yes",
           })),
