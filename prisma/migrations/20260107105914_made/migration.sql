@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Candidate" ALTER COLUMN "dob" DROP NOT NULL,
+ALTER COLUMN "status" SET DEFAULT 'PENDING';

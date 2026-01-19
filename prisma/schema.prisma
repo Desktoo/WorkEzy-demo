@@ -1,0 +1,249 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Employer {
+  id              String         @id @default(uuid())
+  fullName        String        // Fixed from full name [cite: 258]
+  clerkId         String         @unique
+  email           String         @unique
+  gender          String 
+  designation     String       
+  companyName     String        
+  companyLogo     String?        
+  industry        String
+  numOfEmployees  String       
+  socialMedia     String?        
+  city            String        
+  state           String        
+  country         String
+  panCard         String?        
+  gstCertificate  String? 
+         
+  status          EmployerStatus @default(PENDING) 
+  createdAt       DateTime       @default(now()) 
+  updatedAt       DateTime       @updatedAt 
+
+  jobs            Job[]
+  payments        Payment[]
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model Job {
+  id                String         @id @default(uuid())
+  jobTitle          String         
+  city              String         
+  state             String        
+  minExperience     String           
+  minEducation      String         
+  creditsUsed       Int            @default(0) 
+  jobType           String         
+  locationType      String   
+  minSalary         String            
+  maxSalary         String            
+  startTime         DateTime      
+  endTime           DateTime      
+  daysPerWeek       String            
+  benefits          String[]       
+  jobDescription    String        
+  status            JobStatus      @default(PENDING) 
+  createdAt         DateTime       @default(now()) 
+  updatedAt         DateTime       @updatedAt 
+  expiresAt         DateTime      
+
+  employerId        String
+  employer          Employer       @relation(fields: [employerId], references: [id])
+  planId            String
+  plan              Plan          @relation(fields: [planId], references: [id])
+  applications      Application[]
+  filteringQuestions JobFilteringQuestion[] 
+
+  jobAiScreeningQuestions JobAiScreeningQuestion[]
+}
+
+model Candidate {
+  id                               String         @id @default(uuid())
+  fullName                         String         
+  email                            String?        
+  phoneNumber                      String         @unique        
+  gender                           String        
+  dateOfBirth                      DateTime?
+  age                              Int
+  highestEducation                 String
+  educationSpecialization          String
+  noticePeriod                     Int   
+  industry                         String
+  yearsOfExperience                String    
+  photo                            String?        
+  city                             String
+  state                            String        
+  country                          String        
+  createdAt                        DateTime         @default(now())
+  status                           CandidateStatus  @default(PENDING) 
+  canUpdateDetails                 Boolean          @default(true)
+
+  applications     Application[]
+  skills           CandidateSkill[]
+  languages        CandidateLanguage[]
+}
+
+model Plan {
+  id              String         @id @default(uuid())
+  name            String         
+  price           Int            
+  activeCredits   Int            @default(0) 
+  createdAt       DateTime       @default(now()) 
+  
+  jobs            Job[]
+  payments        Payment[]
+}
+
+model Payment {
+  id              String         @id @default(uuid())
+  transactionId   String         
+  provider        String         // razorpay, stripe [cite: 210]
+  amount          Int            
+  currency        String         @default("INR")
+  isConsumed      Boolean        @default(false)
+  status          PaymentStatus  
+  createdAt       DateTime       @default(now()) 
+
+  employerId      String
+  employer        Employer       @relation(fields: [employerId], references: [id])
+  planId          String
+  plan            Plan           @relation(fields: [planId], references: [id])
+}
+
+model JobFilteringQuestion {
+  id              String         @id @default(uuid())
+  question        String         
+  expectedAnswer  String        
+  createdAt       DateTime       @default(now()) 
+  
+  jobId           String
+  job             Job            @relation(fields: [jobId], references: [id])
+  answers         ApplicationFilteringAnswer[]
+}
+
+model Application {
+  id              String         @id @default(uuid())
+  status          ApplicationStatus @default(APPLIED) 
+  appliedAt       DateTime       @default(now()) 
+  updatedAt       DateTime       @updatedAt 
+
+  jobId           String
+  job             Job            @relation(fields: [jobId], references: [id])
+  candidateId     String
+  candidate       Candidate      @relation(fields: [candidateId], references: [id])
+
+  filteringAnswers ApplicationFilteringAnswer[]
+  aiAnswers       CandidateAiAnswer[]
+}
+
+model ApplicationFilteringAnswer {
+  id              String         @id @default(uuid())
+  candidateAnswer String         
+  isCorrect       Boolean        
+  createdAt       DateTime       @default(now()) 
+
+  applicationId   String
+  application     Application    @relation(fields: [applicationId], references: [id])
+  questionId      String
+  question        JobFilteringQuestion @relation(fields: [questionId], references: [id])
+}
+
+model JobAiScreeningQuestion {
+  id              String         @id @default(uuid())
+  question        String         // The question text [cite: 63, 169]
+  createdAt       DateTime       @default(now()) 
+
+  jobId           String 
+  job             Job            @relation(fields: [jobId], references: [id])
+  
+  // The answers recorded by the intern
+  answers         CandidateAiAnswer[] 
+}
+
+model CandidateAiAnswer {
+  id              String         @id @default(uuid())
+  candidateAnswer String         // Intern types what the candidate said [cite: 66, 231]
+  isAiFit         Boolean        @default(false) // Intern's "Yes/No" evaluation [cite: 66, 231]
+  remarks         String?        // Extra notes from the intern's call
+  createdAt       DateTime       @default(now())
+
+  applicationId   String
+  application     Application    @relation(fields: [applicationId], references: [id])
+  
+  questionId      String
+  question        JobAiScreeningQuestion @relation(fields: [questionId], references: [id])
+}
+
+// --- Candidate Sub-Tables ---
+
+model CandidateSkill {
+  id              String         @id @default(uuid())
+  name            String         
+  createdAt       DateTime       @default(now()) 
+
+  candidateId     String
+  candidate       Candidate      @relation(fields: [candidateId], references: [id])
+}
+
+
+model CandidateLanguage {
+  id              String         @id @default(uuid())
+  languageName    String         
+  createdAt       DateTime       @default(now()) 
+
+  candidateId     String
+  candidate       Candidate      @relation(fields: [candidateId], references: [id])
+}
+
+// --- Enums ---
+
+enum EmployerStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+enum CandidateStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+enum JobStatus {
+  ACTIVE
+  PENDING
+  EXPIRED
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  PENDING
+}
+
+enum ApplicationStatus {
+  APPLIED
+  INTERESTED
+  AI_SCREENED
+  AI_FIT
+  AI_NOT_FIT
+}

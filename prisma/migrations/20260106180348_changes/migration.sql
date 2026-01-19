@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Employer" ALTER COLUMN "companyLogo" DROP NOT NULL,
+ALTER COLUMN "panCard" DROP NOT NULL,
+ALTER COLUMN "gstCertificate" DROP NOT NULL;
