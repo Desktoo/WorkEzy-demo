@@ -45,7 +45,7 @@ export async function GET(req: Request) {
             id: true,
             name: true,
             price: true,
-            activeCredits: true,
+            creditsPerJob: true,
           },
         },
       },

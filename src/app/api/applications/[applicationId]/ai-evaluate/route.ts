@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   _req: Request,
-  { params }: { params: { applicationId: string } }
+  { params }: { params: Promise<{ applicationId: string }> }
 ) {
   /* --------------------------------
      1. Auth
@@ -18,7 +18,7 @@ export async function POST(
     );
   }
 
-  const { applicationId } = params;
+  const { applicationId } = await params;
 
   /* --------------------------------
      2. Fetch application + ownership
