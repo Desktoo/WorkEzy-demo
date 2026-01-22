@@ -33,6 +33,10 @@ export const candidateBackendSchema = z.object({
   state: z.string(),
 
   country: z.string(),
+
+  skills: z.array(z.string()),
+
+  languages: z.array(z.string()),
 });
 
 export type candidateBackendInput = z.infer<typeof candidateBackendSchema>;

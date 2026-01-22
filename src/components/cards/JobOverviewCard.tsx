@@ -58,7 +58,7 @@ export function JobOverviewCard({ job }: Props) {
         <OverviewItem
           icon={<BarChart />}
           label="Min. Experience"
-          value={`${job.minExperience} year(s)`}
+          value={`${job.minExperience}`}
         />
         <OverviewItem
           icon={<BookOpen />}
@@ -73,7 +73,7 @@ export function JobOverviewCard({ job }: Props) {
         <OverviewItem
           icon={<Clock />}
           label="Days per Week"
-          value={`${job.daysPerWeek} days`}
+          value={`${job.daysPerWeek}`}
         />
       </CardContent>
     </Card>

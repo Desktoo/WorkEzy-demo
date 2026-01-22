@@ -14,7 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   PostJobFormDefaultState,
   usePostJobStore,
-} from "@/store/postJob.store";
+} from "@/store/job/postJob.store";
 import { useEffect } from "react";
 import JobTypeAndScheduleSection from "./JobTypeAndScheduleSection";
 import toast from "react-hot-toast";
@@ -25,7 +25,6 @@ type PostJobFormProps = {
   jobId?: string;
   initialData?: PostJobFormValues;
 };
-
 
 export default function PostJobForm({
   mode = "post",
@@ -56,6 +55,11 @@ export default function PostJobForm({
         await updateJob(jobId, data);
         toast.success("Job updated successfully!");
       } else {
+        console.log(
+          "this is the final paylaod before going to the server: ",
+          data
+        );
+
         await submitPostJob(data);
         toast.success("Job posted successfully!");
       }
@@ -63,7 +67,7 @@ export default function PostJobForm({
       clearDraft();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Something went wrong"
+        error instanceof Error ? error.message : "Something went wrong",
       );
     }
   };
@@ -80,11 +84,26 @@ export default function PostJobForm({
       </p>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
-        <BasicDetailSection form={form} onSectionBlur={() => setDraft(form.getValues())} />
-        <JobTypeAndScheduleSection form={form} onSectionBlur={() => setDraft(form.getValues())} />
-        <BenefitsSection form={form} onSectionBlur={() => setDraft(form.getValues())} />
-        <JobDescriptionSection form={form} onSectionBlur={() => setDraft(form.getValues())} />
-        <FilteringQuestionSection form={form} onSectionBlur={() => setDraft(form.getValues())} />
+        <BasicDetailSection
+          form={form}
+          onSectionBlur={() => setDraft(form.getValues())}
+        />
+        <JobTypeAndScheduleSection
+          form={form}
+          onSectionBlur={() => setDraft(form.getValues())}
+        />
+        <BenefitsSection
+          form={form}
+          onSectionBlur={() => setDraft(form.getValues())}
+        />
+        <JobDescriptionSection
+          form={form}
+          onSectionBlur={() => setDraft(form.getValues())}
+        />
+        <FilteringQuestionSection
+          form={form}
+          onSectionBlur={() => setDraft(form.getValues())}
+        />
 
         <Button
           type="submit"
@@ -94,11 +113,10 @@ export default function PostJobForm({
           {form.formState.isSubmitting
             ? "Saving..."
             : mode === "edit"
-            ? "Update Job"
-            : "Post Job"}
+              ? "Update Job"
+              : "Post Job"}
         </Button>
       </form>
     </div>
   );
 }
-

@@ -16,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type JobListingCardProps = {
   id: string;
@@ -53,6 +54,8 @@ export default function JobListingCard({
       ? "bg-yellow-500"
       : "bg-gray-400";
 
+  const router = useRouter()
+
   return (
     <Card className="w-full rounded-xl">
       {/* Header */}
@@ -86,7 +89,7 @@ export default function JobListingCard({
           </p>
 
           <div className="flex gap-3">
-            <Button variant="outline" className="flex gap-2">
+            <Button variant="outline" className="flex gap-2" onClick={() => router.push(`/dashboard/job/${id}/candidates`)}>
               <Users className="h-4 w-4" />
               View Candidates ({applicationsCount})
             </Button>

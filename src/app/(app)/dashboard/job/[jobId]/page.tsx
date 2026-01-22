@@ -34,6 +34,8 @@ export default async function Page(props: { params: Promise<{ jobId: string }> }
     },
   });
 
+  console.log("this is job object", job)
+
   if (!job) redirect("/dashboard");
 
   const applyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/apply/${job.id}`;

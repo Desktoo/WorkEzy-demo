@@ -2,26 +2,24 @@ import { uploadFile } from "@/lib/supabase/upload";
 import { CandidateApplyFormValues } from "@/lib/validations/frontend/candidate.schema";
 import axios from "axios";
 
-type CandidateApplicationPayload = Omit<
-  CandidateApplyFormValues,
-  "photo" | "dateOfBirth"
-> & {
-  photo: string | null;
-  dateOfBirth: Date | null;
-};
+/* --------------------------------
+   Helpers
+--------------------------------- */
 
 function normalizeCandidateDates(
   data: CandidateApplyFormValues
 ) {
   return {
     ...data,
-    dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+    dateOfBirth: data.dateOfBirth
+      ? new Date(data.dateOfBirth)
+      : null,
   };
 }
 
-
-
-/* ---------------- Submit Application ---------------- */
+/* --------------------------------
+   Submit Application (FINAL)
+--------------------------------- */
 
 export async function submitCandidateApplication(
   data: CandidateApplyFormValues,
@@ -45,32 +43,19 @@ export async function submitCandidateApplication(
       photoUrl = uploaded?.url ?? null;
     }
 
-    /* ---------- 3️⃣ Split payload correctly ---------- */
+    /* ---------- 3️⃣ Prepare payload ---------- */
     const {
-      filteringAnswers, // ❌ application-level
-      photo,            // ❌ replaced with URL
-      ...candidateOnlyData
+      photo,             // ❌ File object
+      filteringAnswers,  // ❌ handled by backend later
+      ...candidateData
     } = normalizedData;
 
-    /* ---------- 4️⃣ Create Candidate ---------- */
-    const candidateRes = await axios.post("/api/candidate", {
-      ...candidateOnlyData,
+    /* ---------- 4️⃣ Single API call ---------- */
+    await axios.post("/api/candidate", {
+      ...candidateData,
+      jobId,             // ✅ REQUIRED
       photo: photoUrl,
     });
-
-    const candidateId: string = candidateRes.data?.candidate?.id;
-
-    if (!candidateId) {
-      throw new Error("Candidate creation failed");
-    }
-
-    /* ---------- 5️⃣ Create Application ---------- */
-    await axios.post("/api/applications", {
-      jobId,
-      candidateId,
-      filteringAnswers: filteringAnswers ?? [], // ✅ optional
-    });
-
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {
       console.error("Candidate apply error:", {
@@ -93,11 +78,14 @@ export async function submitCandidateApplication(
   }
 }
 
+/* --------------------------------
+   Update Candidate Profile
+--------------------------------- */
 
 export async function updateCandidateApplication(
   candidateId: string,
   data: CandidateApplyFormValues
-) {
+): Promise<void> {
   let photoUrl: string | null = null;
 
   if (data.photo instanceof File) {
@@ -111,13 +99,10 @@ export async function updateCandidateApplication(
     photoUrl = uploaded?.url ?? null;
   }
 
-  const {...rest } = data;
-
   const payload = {
-    ...rest,
+    ...data,
     photo: photoUrl,
   };
 
   await axios.patch(`/api/candidate/${candidateId}`, payload);
 }
-

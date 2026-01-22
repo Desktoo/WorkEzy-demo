@@ -15,6 +15,8 @@ export default async function Page(props: {
     where: { id: jobId },
   });
 
+  console.log("this is job coming from the DB: ", job)
+
   if (!job) {
     return (
       <ApplyLayout>

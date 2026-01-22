@@ -34,17 +34,6 @@ model Employer {
   payments        Payment[]
 }
 
-model Otp {
-  id        String   @id @default(cuid())
-  email     String
-  code      String
-  isUsed    Boolean  @default(false)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([email])
-}
-
 model Job {
   id                String         @id @default(uuid())
   jobTitle          String         
@@ -52,7 +41,6 @@ model Job {
   state             String        
   minExperience     String           
   minEducation      String         
-  creditsUsed       Int            @default(0) 
   jobType           String         
   locationType      String   
   minSalary         String            
@@ -67,10 +55,18 @@ model Job {
   updatedAt         DateTime       @updatedAt 
   expiresAt         DateTime      
 
+  creditsUsed       Int            @default(0) 
+  totalCredits      Int            
+
   employerId        String
   employer          Employer       @relation(fields: [employerId], references: [id])
+
+  paymentId         String   @unique
+  payment           Payment  @relation(fields: [paymentId], references: [id])
+
   planId            String
   plan              Plan          @relation(fields: [planId], references: [id])
+
   applications      Application[]
   filteringQuestions JobFilteringQuestion[] 
 
@@ -107,7 +103,7 @@ model Plan {
   id              String         @id @default(uuid())
   name            String         
   price           Int            
-  activeCredits   Int            @default(0) 
+  creditsPerJob   Int            @default(0) 
   createdAt       DateTime       @default(now()) 
   
   jobs            Job[]
@@ -116,16 +112,19 @@ model Plan {
 
 model Payment {
   id              String         @id @default(uuid())
-  transactionId   String         
+  transactionId   String         @unique
   provider        String         // razorpay, stripe [cite: 210]
   amount          Int            
   currency        String         @default("INR")
   isConsumed      Boolean        @default(false)
   status          PaymentStatus  
-  createdAt       DateTime       @default(now()) 
+  createdAt       DateTime       @default(now())
+
+  job             Job? 
 
   employerId      String
   employer        Employer       @relation(fields: [employerId], references: [id])
+
   planId          String
   plan            Plan           @relation(fields: [planId], references: [id])
 }
@@ -154,6 +153,8 @@ model Application {
 
   filteringAnswers ApplicationFilteringAnswer[]
   aiAnswers       CandidateAiAnswer[]
+
+   @@unique([jobId, candidateId])
 }
 
 model ApplicationFilteringAnswer {
@@ -171,6 +172,7 @@ model ApplicationFilteringAnswer {
 model JobAiScreeningQuestion {
   id              String         @id @default(uuid())
   question        String         // The question text [cite: 63, 169]
+  expectedAnswer  String
   createdAt       DateTime       @default(now()) 
 
   jobId           String 
@@ -182,9 +184,7 @@ model JobAiScreeningQuestion {
 
 model CandidateAiAnswer {
   id              String         @id @default(uuid())
-  candidateAnswer String         // Intern types what the candidate said [cite: 66, 231]
-  isAiFit         Boolean        @default(false) // Intern's "Yes/No" evaluation [cite: 66, 231]
-  remarks         String?        // Extra notes from the intern's call
+  candidateAnswer String?         // Intern types what the candidate said [cite: 66, 231]
   createdAt       DateTime       @default(now())
 
   applicationId   String
@@ -192,6 +192,8 @@ model CandidateAiAnswer {
   
   questionId      String
   question        JobAiScreeningQuestion @relation(fields: [questionId], references: [id])
+
+  @@unique([applicationId, questionId])
 }
 
 // --- Candidate Sub-Tables ---

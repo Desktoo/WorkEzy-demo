@@ -1,28 +1,102 @@
 import { prisma } from "@/lib/prisma";
-import { candidateBackendSchema, candidateBackendPatchSchema } from "@/lib/validations/backend/candidateApplyBackend.schema";
+import { candidateBackendSchema } from "@/lib/validations/backend/candidateApplyBackend.schema";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { Prisma } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
+    /* --------------------------------
+       1. Parse raw body
+       CHANGE: jobId is NOT part of schema
+    --------------------------------- */
     const body = await req.json();
+    const { jobId, ...candidatePayload } = body;
 
-    const validatedData = candidateBackendSchema.parse(body);
+    if (!jobId) {
+      return NextResponse.json(
+        { success: false, message: "jobId is required" },
+        { status: 400 }
+      );
+    }
 
-    console.log("this is the data before going to DB", validatedData)
+    /* --------------------------------
+       2. Validate candidate-only data
+    --------------------------------- */
+    const validatedData =
+      candidateBackendSchema.parse(candidatePayload);
 
-    const candidate = await prisma.candidate.create({
-      data: validatedData,
+    const {
+      skills = [],
+      languages = [],
+      ...candidateData
+    } = validatedData;
+
+    /* --------------------------------
+       3. Find or create candidate
+    --------------------------------- */
+    let candidate = await prisma.candidate.findUnique({
+      where: { phoneNumber: candidateData.phoneNumber },
     });
 
-    return NextResponse.json({ success: true, candidate }, { status: 201 });
+    if (!candidate) {
+      candidate = await prisma.candidate.create({
+        data: {
+          ...candidateData,
+
+          skills: {
+            create: skills.map((skill: string) => ({
+              name: skill,
+            })),
+          },
+
+          languages: {
+            create: languages.map((language: string) => ({
+              languageName: language,
+            })),
+          },
+        },
+      });
+    }
+
+    /* --------------------------------
+       4. Create application
+    --------------------------------- */
+    try {
+      await prisma.application.create({
+        data: {
+          jobId,
+          candidateId: candidate.id,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Candidate has already applied for this job",
+          },
+          { status: 409 }
+        );
+      }
+
+      throw error;
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        candidateId: candidate.id,
+      },
+      { status: 201 }
+    );
   } catch (error: unknown) {
-    console.log("this is the error: ", error)
-    console.error("Employer POST error:", error);
+    console.error("Candidate apply error:", error);
 
     if (error instanceof ZodError) {
-      console.error("Zod validation issues:", error.issues);
-
       return NextResponse.json(
         {
           success: false,
@@ -34,68 +108,11 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(
-      { success: false, message: "Failed to create employer" },
+      {
+        success: false,
+        message: "Failed to apply for job",
+      },
       { status: 500 }
     );
   }
 }
-
-// export async function PATCH(
-//   req: Request,
-//   { params }: { params: { id: string } }
-// ) {
-//   try {
-//     const candidateId = params.id;
-//     const body = await req.json();
-
-//     const validatedData =
-//       candidateBackendPatchSchema.parse(body);
-
-//     if (Object.keys(validatedData).length === 0) {
-//       return NextResponse.json(
-//         { message: "No fields provided to update" },
-//         { status: 400 }
-//       );
-//     }
-
-//     // 🔐 Check permission
-//     const candidate = await prisma.candidate.findUnique({
-//       where: { id: candidateId },
-//       select: { canUpdateDetails: true },
-//     });
-
-//     if (!candidate?.canUpdateDetails) {
-//       return NextResponse.json(
-//         { message: "You can update details only once" },
-//         { status: 403 }
-//       );
-//     }
-
-//     // ✅ Update + lock further updates
-//     const updatedCandidate = await prisma.candidate.update({
-//       where: { id: candidateId },
-//       data: {
-//         ...validatedData,
-//         canUpdateDetails: false,
-//       },
-//     });
-
-//     return NextResponse.json(
-//       { success: true, candidate: updatedCandidate },
-//       { status: 200 }
-//     );
-//   } catch (error) {
-//     if (error instanceof ZodError) {
-//       return NextResponse.json(
-//         { message: "Invalid input", issues: error.issues },
-//         { status: 400 }
-//       );
-//     }
-
-//     return NextResponse.json(
-//       { message: "Failed to update candidate" },
-//       { status: 500 }
-//     );
-//   }
-// }
-

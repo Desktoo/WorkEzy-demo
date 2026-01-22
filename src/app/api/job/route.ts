@@ -1,17 +1,18 @@
-import { getActiveUnconsumedPayment } from "@/lib/payments/GetActivePayment";
 import { prisma } from "@/lib/prisma";
 import { JobBackendSchema } from "@/lib/validations/backend/jobBackend.schema";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
+/* ======================================================
+   CREATE JOB
+====================================================== */
 export async function POST(req: Request) {
   try {
     /* --------------------------------
-       1. Auth check
+       1. Auth
     --------------------------------- */
     const { userId } = await auth();
-
     if (!userId) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     /* --------------------------------
-       2. Resolve employer
+       2. Employer
     --------------------------------- */
     const employer = await prisma.employer.findUnique({
       where: { clerkId: userId },
@@ -35,9 +36,21 @@ export async function POST(req: Request) {
     }
 
     /* --------------------------------
-       3. Get active payment
+       3. Get latest SUCCESS + unconsumed payment
+       CHANGE: ensure only valid payments can post jobs
     --------------------------------- */
-    const payment = await getActiveUnconsumedPayment(employer.id);
+    const payment = await prisma.payment.findFirst({
+      where: {
+        employerId: employer.id,
+        status: "SUCCESS", // ✅ IMPORTANT
+        isConsumed: false,
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        planId: true,
+      },
+    });
 
     if (!payment) {
       return NextResponse.json(
@@ -50,46 +63,66 @@ export async function POST(req: Request) {
     }
 
     /* --------------------------------
-       4. Validate payload
+       4. Fetch plan to snapshot credits
+       CHANGE: credits now belong to JOB
+    --------------------------------- */
+    const plan = await prisma.plan.findUnique({
+      where: { id: payment.planId },
+      select: { creditsPerJob: true },
+    });
+
+    if (!plan) {
+      return NextResponse.json(
+        { success: false, message: "Plan not found" },
+        { status: 400 }
+      );
+    }
+
+    /* --------------------------------
+       5. Validate payload
     --------------------------------- */
     const body = await req.json();
     const validatedData = JobBackendSchema.parse(body);
 
     /* --------------------------------
-       5. Transaction (atomic)
+       6. Atomic transaction
+       CHANGE: snapshot totalCredits from plan
     --------------------------------- */
-    const result = await prisma.$transaction(async (tx) => {
-      const job = await tx.job.create({
+    const job = await prisma.$transaction(async (tx) => {
+      const createdJob = await tx.job.create({
         data: {
           ...validatedData,
           employerId: employer.id,
           planId: payment.planId,
-          expiresAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+          paymentId: payment.id,
+
+          totalCredits: plan.creditsPerJob, // ✅ SNAPSHOT
+          creditsUsed: 0,
+
+          expiresAt: new Date(
+            Date.now() + 15 * 24 * 60 * 60 * 1000
+          ),
 
           filteringQuestions: validatedData.filteringQuestions
-            ? {
-                create: validatedData.filteringQuestions,
-              }
+            ? { create: validatedData.filteringQuestions }
             : undefined,
         },
       });
 
+      // Mark payment as consumed so it cannot be reused
       await tx.payment.update({
         where: { id: payment.id },
         data: { isConsumed: true },
       });
 
-      return job;
+      return createdJob;
     });
 
-    /* --------------------------------
-       6. Success response
-    --------------------------------- */
     return NextResponse.json(
-      { success: true, job: result },
+      { success: true, job },
       { status: 201 }
     );
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("[JOB_CREATE_ERROR]", error);
 
     if (error instanceof ZodError) {
@@ -110,6 +143,9 @@ export async function POST(req: Request) {
   }
 }
 
+/* ======================================================
+   GET JOBS
+====================================================== */
 export async function GET() {
   const { userId } = await auth();
 
@@ -141,9 +177,11 @@ export async function GET() {
       minSalary: true,
       maxSalary: true,
       status: true,
-      applications: {
-        select: { id: true },
-      },
+
+      totalCredits: true,  // ✅ JOB owns credits
+      creditsUsed: true,   // ✅ JOB usage
+
+      applications: { select: { id: true } },
     },
   });
 
@@ -151,6 +189,7 @@ export async function GET() {
     jobs: jobs.map((job) => ({
       ...job,
       applicationsCount: job.applications.length,
+      availableCredits: job.totalCredits - job.creditsUsed,
     })),
   });
 }

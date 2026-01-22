@@ -5,18 +5,22 @@ import { auth } from "@clerk/nextjs/server";
 
 export async function POST(req: Request) {
   try {
+    /* --------------------------------
+       1. Auth
+    --------------------------------- */
     const { userId } = await auth();
-
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    /* --------------------------------
+       2. Parse body
+    --------------------------------- */
     const {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
       planId,
-      amount,
     } = await req.json();
 
     if (
@@ -31,6 +35,9 @@ export async function POST(req: Request) {
       );
     }
 
+    /* --------------------------------
+       3. Resolve employer
+    --------------------------------- */
     const employer = await prisma.employer.findUnique({
       where: { clerkId: userId },
       select: { id: true },
@@ -43,6 +50,9 @@ export async function POST(req: Request) {
       );
     }
 
+    /* --------------------------------
+       4. Verify Razorpay signature
+    --------------------------------- */
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
 
     const expectedSignature = crypto
@@ -52,29 +62,62 @@ export async function POST(req: Request) {
 
     if (expectedSignature !== razorpay_signature) {
       return NextResponse.json(
-        { success: false, message: "Invalid signature" },
+        { error: "Invalid signature" },
         { status: 400 }
       );
     }
 
+    /* --------------------------------
+       5. Validate plan exists
+       NOTE: Credits are NOT assigned here.
+       Credits are snapshotted at JOB creation.
+    --------------------------------- */
+    const plan = await prisma.plan.findUnique({
+      where: { id: planId },
+      select: { id: true, price: true },
+    });
+
+    if (!plan) {
+      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
+    }
+
+    /* --------------------------------
+       6. Prevent duplicate payments
+    --------------------------------- */
+    const existingPayment = await prisma.payment.findUnique({
+      where: { transactionId: razorpay_payment_id },
+    });
+
+    if (existingPayment) {
+      return NextResponse.json(
+        { error: "Payment already recorded" },
+        { status: 409 }
+      );
+    }
+
+    /* --------------------------------
+       7. Create payment
+       NOTE: Payment only unlocks job creation.
+    --------------------------------- */
     const payment = await prisma.payment.create({
       data: {
         transactionId: razorpay_payment_id,
         provider: "razorpay",
-        amount,
+        amount: plan.price,
         currency: "INR",
         status: "SUCCESS",
         isConsumed: false,
-
         employerId: employer.id,
-        planId,
+        planId: plan.id,
       },
     });
 
-    return NextResponse.json({ success: true, paymentId: payment.id });
+    return NextResponse.json({
+      success: true,
+      paymentId: payment.id,
+    });
   } catch (error) {
     console.error("[RAZORPAY_VERIFY_ERROR]", error);
-
     return NextResponse.json(
       { error: "Payment verification failed" },
       { status: 500 }

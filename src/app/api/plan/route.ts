@@ -12,6 +12,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, plan }, { status: 201 });
   } catch (error: unknown) {
+    console.log(error)
     if (error instanceof ZodError) {
       return NextResponse.json(
         {
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(
-      { success: false, message: "Failed to create employer" },
+      { success: false, message: "Failed to create plan" },
       { status: 500 }
     );
   }

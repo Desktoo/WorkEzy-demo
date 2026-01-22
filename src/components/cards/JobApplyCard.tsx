@@ -64,7 +64,7 @@ export function JobApplyCard({ job, benefits, jobId }: JobApplyCardProps) {
 
               <MetaItem
                 icon={<Calendar className="h-4 w-4" />}
-                text={`${job.daysPerWeek} days/week`}
+                text={`${job.daysPerWeek} /week`}
               />
             </div>
 
@@ -74,7 +74,7 @@ export function JobApplyCard({ job, benefits, jobId }: JobApplyCardProps) {
                 text={`Min. ${
                   job.minExperience === "0"
                     ? "Fresher"
-                    : `${job.minExperience} years`
+                    : `${job.minExperience} `
                 } experience`}
               />
 

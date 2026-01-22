@@ -6,19 +6,53 @@ type JobPostPayload = Omit<PostJobFormValues, "startTime" | "endTime"> & {
   endTime: Date | null;
 };
 
+function timeStringToLocalDate(time: string): Date {
+  const match = time.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+
+  if (!match) {
+    throw new Error(`Invalid time format: ${time}`);
+  }
+
+  const [, hours, minutes, period] = match;
+
+  let h = parseInt(hours, 10);
+  const m = parseInt(minutes, 10);
+
+  if (period.toUpperCase() === "PM" && h !== 12) h += 12;
+  if (period.toUpperCase() === "AM" && h === 12) h = 0;
+
+  // LOCAL time (no UTC)
+  const date = new Date(1970, 0, 1, h, m, 0, 0);
+
+  if (isNaN(date.getTime())) {
+    throw new Error("Failed to parse time");
+  }
+
+  return date;
+}
+
+
 function normalizeJobDates(data: PostJobFormValues) {
   return {
     ...data,
-    startTime: data.startTime ? new Date(data.startTime) : null,
-    endTime: data.endTime ? new Date(data.endTime) : null,
+    startTime: data.startTime
+      ? timeStringToLocalDate(data.startTime)
+      : null,
+
+    endTime: data.endTime
+      ? timeStringToLocalDate(data.endTime)
+      : null,
   };
 }
+
 
 export async function submitPostJob(data: PostJobFormValues): Promise<void> {
   try {
     const normalisedData = normalizeJobDates(data);
 
     const payload: JobPostPayload = normalisedData;
+
+    console.log("this is the final payload going to the backend", payload)
 
     await axios.post("/api/job", payload)
   } catch (error: unknown) {

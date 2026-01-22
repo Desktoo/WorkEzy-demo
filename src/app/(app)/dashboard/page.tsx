@@ -30,7 +30,8 @@ export default function Page() {
         return;
       }
 
-      toast("Active plan required to post a job \n Redirecting to Pricing Section", { icon: <CircleAlert className="w-8 h-8" /> });
+      toast(`Active plan required to post a job \n Redirecting to Pricing Section`, { icon: <CircleAlert className="w-8 h-8" /> });
+
       setTimeout(() => router.push("/pricing"), 2000);
     } catch {
       toast.error("Something went wrong");
