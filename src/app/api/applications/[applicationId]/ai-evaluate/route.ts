@@ -3,6 +3,16 @@ import { evaluateAiScreening } from "@/services/algorithm/checkAIFitCandidates";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
+type AiAnswerWithQuestion = {
+  id: string;
+  candidateAnswer: string | null;
+  question: {
+    expectedAnswer: string;
+  };
+};
+
+
+
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ applicationId: string }> }
@@ -51,7 +61,10 @@ export async function POST(
   /* --------------------------------
      3. Convert answers → isFit[]
   --------------------------------- */
-  const evaluatedAnswers = application.aiAnswers.map((ans) => {
+
+  const aiAnswers = application.aiAnswers as AiAnswerWithQuestion[]
+
+  const evaluatedAnswers = aiAnswers.map((ans) => {
     if (!ans.candidateAnswer) {
       return { isFit: false };
     }

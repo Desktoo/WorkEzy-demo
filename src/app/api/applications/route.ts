@@ -1,9 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+type FilteringAnswerInput = {
+  questionId: string;
+  answer: string;
+};
+
+type ApplyJobPayload = {
+  jobId: string;
+  candidateId: string;
+  filteringAnswers?: FilteringAnswerInput[];
+};
+
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as ApplyJobPayload;
 
     const {
       jobId,
@@ -36,7 +48,7 @@ export async function POST(req: Request) {
             where: { jobId },
           });
 
-        const questionMap = new Map(
+        const questionMap = new Map<string, string>(
           questions.map((q) => [q.id, q.expectedAnswer])
         );
 
