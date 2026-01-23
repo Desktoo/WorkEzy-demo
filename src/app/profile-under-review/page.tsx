@@ -20,8 +20,6 @@ export default async function ProfileApprovalPage() {
 
   const status = employer.status;
 
-  // if(status === "APPROVED") redirect("/dashboard")
-
   const STATUS_CONFIG = {
     PENDING: {
       icon: <Hourglass className="h-7 w-7 text-yellow-600" />,

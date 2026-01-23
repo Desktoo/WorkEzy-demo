@@ -4,6 +4,12 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
+type PrismaTx = Parameters<typeof prisma.$transaction>[0] extends (
+  prisma: infer T
+) => any
+  ? T
+  : never;
+
 /* ======================================================
    CREATE JOB
 ====================================================== */
@@ -88,7 +94,7 @@ export async function POST(req: Request) {
        6. Atomic transaction
        CHANGE: snapshot totalCredits from plan
     --------------------------------- */
-    const job = await prisma.$transaction(async (tx) => {
+    const job = await prisma.$transaction(async (tx: PrismaTx) => {
       const createdJob = await tx.job.create({
         data: {
           ...validatedData,
