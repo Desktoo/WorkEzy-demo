@@ -2,6 +2,24 @@ import { prisma } from "@/lib/prisma";
 import { HiringPosterCard } from "@/components/cards/HiringPosterCard";
 import NoActiveJobCard from "@/components/cards/NoActiveJobCard";
 
+
+import { Prisma } from "@prisma/client";
+
+/* 👇 derive the exact return type */
+type JobPoster = Prisma.JobGetPayload<{
+  select: {
+    id: true;
+    jobTitle: true;
+    city: true;
+    state: true;
+    minSalary: true;
+    maxSalary: true;
+    createdAt: true;
+    expiresAt: true;
+  };
+}>;
+
+
 export default async function Page() {
   // 🔹 Fetch all ACTIVE jobs
   const jobs = await prisma.job.findMany({
@@ -34,7 +52,7 @@ export default async function Page() {
 
       {hasJobs ? (
         <div className="px-4 grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-          {jobs.map((job) => (
+          {jobs.map((job: JobPoster) => (
             <HiringPosterCard
               key={job.id}
               jobId={job.id}
