@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { candidateBackendSchema } from "@/lib/validations/backend/candidateApplyBackend.schema";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { Prisma } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -69,10 +68,12 @@ export async function POST(req: Request) {
           candidateId: candidate.id,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: string }).code === "P2002"
       ) {
         return NextResponse.json(
           {
