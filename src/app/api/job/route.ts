@@ -10,6 +10,23 @@ type PrismaTx = Parameters<typeof prisma.$transaction>[0] extends (
   ? T
   : never;
 
+type JobListItem = {
+  id: string;
+  jobTitle: string;
+  city: string;
+  state: string;
+  locationType: string;
+  minExperience: string;
+  minEducation: string;
+  jobType: string;
+  minSalary: string;
+  maxSalary: string;
+  status: string;
+  totalCredits: number;
+  creditsUsed: number;
+  applications: { id: string }[];
+};
+
 /* ======================================================
    CREATE JOB
 ====================================================== */
@@ -192,7 +209,7 @@ export async function GET() {
   });
 
   return NextResponse.json({
-    jobs: jobs.map((job) => ({
+    jobs: jobs.map((job: JobListItem) => ({
       ...job,
       applicationsCount: job.applications.length,
       availableCredits: job.totalCredits - job.creditsUsed,
