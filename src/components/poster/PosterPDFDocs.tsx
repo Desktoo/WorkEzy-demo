@@ -39,7 +39,7 @@ export function PosterPdfDocument({
   requirements,
 }: PosterPdfProps) {
 
-  const applyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/apply/${jobId}`;
+  const applyUrl = `${process.env.NEXT_PUBLIC_APP_URL}apply/${jobId}`;
 
   return (
     <Document>

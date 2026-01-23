@@ -38,7 +38,7 @@ export default async function Page(props: { params: Promise<{ jobId: string }> }
 
   if (!job) redirect("/dashboard");
 
-  const applyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/apply/${job.id}`;
+  const applyUrl = `${process.env.NEXT_PUBLIC_APP_URL}apply/${job.id}`;
 
   const formattedFilteringQuestions = job.filteringQuestions.map((q:{ id: string; question: string; expectedAnswer: string }) => ({
     id: q.id,
