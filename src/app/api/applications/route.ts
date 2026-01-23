@@ -12,6 +12,12 @@ type ApplyJobPayload = {
   filteringAnswers?: FilteringAnswerInput[];
 };
 
+type PrismaTx = Parameters<typeof prisma.$transaction>[0] extends (
+  prisma: infer T
+) => any
+  ? T
+  : never;
+
 
 export async function POST(req: Request) {
   try {
@@ -32,45 +38,53 @@ export async function POST(req: Request) {
     }
 
     // 🚀 TRANSACTION (CRITICAL)
-    const application = await prisma.$transaction(async (tx) => {
-      // 1️⃣ Create application
-      const app = await tx.application.create({
-        data: {
-          jobId,
-          candidateId,
-        },
-      });
+    const application = await prisma.$transaction(
+      async (tx: PrismaTx) => {
+        // 1️⃣ Create application
+        const app = await tx.application.create({
+          data: {
+            jobId,
+            candidateId,
+          },
+        });
 
-      // 2️⃣ Save filtering answers (if any)
-      if (filteringAnswers.length > 0) {
-        const questions =
-          await tx.jobFilteringQuestion.findMany({
+        // 2️⃣ Save filtering answers (if any)
+        if (filteringAnswers.length > 0) {
+          const questions = await tx.jobFilteringQuestion.findMany({
             where: { jobId },
           });
 
-        const questionMap = new Map<string, string>(
-          questions.map((q) => [q.id, q.expectedAnswer])
-        );
+          const questionMap = new Map<string, string>(
+            questions.map(
+              (q: { id: string; expectedAnswer: string }) => [
+                q.id,
+                q.expectedAnswer,
+              ]
+            )
+          );
 
-        await tx.applicationFilteringAnswer.createMany({
-          data: filteringAnswers.map((fa: any) => ({
-            applicationId: app.id,
-            questionId: fa.questionId,
-            candidateAnswer: fa.answer,
-            isCorrect:
-              fa.answer.toLowerCase() ===
-              questionMap.get(fa.questionId)?.toLowerCase(),
-          })),
-        });
+          await tx.applicationFilteringAnswer.createMany({
+            data: filteringAnswers.map(
+              (fa: FilteringAnswerInput) => ({
+                applicationId: app.id,
+                questionId: fa.questionId,
+                candidateAnswer: fa.answer,
+                isCorrect:
+                  fa.answer.toLowerCase() ===
+                  questionMap.get(fa.questionId)?.toLowerCase(),
+              })
+            ),
+          });
 
-        await tx.application.update({
-          where: { id: app.id },
-          data: { status: "AI_SCREENED" },
-        });
+          await tx.application.update({
+            where: { id: app.id },
+            data: { status: "AI_SCREENED" },
+          });
+        }
+
+        return app;
       }
-
-      return app;
-    });
+    );
 
     return NextResponse.json(
       { success: true, application },
