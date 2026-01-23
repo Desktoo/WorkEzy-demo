@@ -45,9 +45,10 @@ export default async function ProfileApprovalPage() {
         "Your profile has been successfully verified. You now have full access to your employer dashboard.",
       showDashboard: true,
     },
-  } as const;
+  };
+  type StatusKey = keyof typeof STATUS_CONFIG;
 
-  const current = STATUS_CONFIG[status];
+  const current = STATUS_CONFIG[status as StatusKey];
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
