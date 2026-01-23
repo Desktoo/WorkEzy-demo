@@ -1,8 +1,15 @@
 import PricingCard from "@/components/cards/PricingCard";
 import { prisma } from "@/lib/prisma";
 
+type Plan = {
+  id: string;
+  name: string;
+  price: number;
+};
+
+
 export default async function PricingPage() {
-  const plans = await prisma.plan.findMany({
+  const plans: Plan[] = await prisma.plan.findMany({
     select: {
       id: true,
       name: true,
@@ -13,9 +20,10 @@ export default async function PricingPage() {
     },
   });
 
+
   // Optional: map plans by name for safety
-  const standardPlan = plans.find(p => p.name === "Standard");
-  const premiumPlan = plans.find(p => p.name === "Premium");
+  const standardPlan = plans.find((p: Plan) => p.name === "Standard");
+  const premiumPlan = plans.find((p: Plan) => p.name === "Premium");
 
   return (
     <div className="w-full min-h-screen my-5">
