@@ -1,22 +1,51 @@
 import { PostJobFormValues } from "@/lib/validations/frontend/jobPost.schema";
-import { Prisma } from "@prisma/client";
-/**
- * Prisma-safe Job type with relations
- */
-type JobWithFilteringQuestions = Prisma.JobGetPayload<{
-  include: {
-    filteringQuestions: true;
-  };
-}>;
+
+/* --------------------------------
+   General structural types
+--------------------------------- */
 
 type YesNo = "yes" | "no";
+
+type FilteringQuestion = {
+  question: string;
+  expectedAnswer: string;
+};
+
+type JobWithFilteringQuestions = {
+  jobTitle: string;
+  city: string;
+  state: string;
+  minExperience: string;
+  minEducation: string;
+  jobType: string;
+  locationType: string;
+  minSalary: string;
+  maxSalary: string;
+
+  startTime: Date | null;
+  endTime: Date | null;
+
+  daysPerWeek: string;
+  benefits: string[] | null;
+  jobDescription: string;
+
+  filteringQuestions: FilteringQuestion[];
+};
+
+/* --------------------------------
+   Helpers
+--------------------------------- */
 
 function normalizeExpectedAnswer(value: string): YesNo {
   return value === "no" ? "no" : "yes";
 }
 
+/* --------------------------------
+   Mapper
+--------------------------------- */
+
 /**
- * Converts Prisma Job → RHF Form Values
+ * Converts Job object → RHF Form Values
  */
 export function mapJobToPostJobForm(
   job: JobWithFilteringQuestions
