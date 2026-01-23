@@ -3,21 +3,19 @@ import { HiringPosterCard } from "@/components/cards/HiringPosterCard";
 import NoActiveJobCard from "@/components/cards/NoActiveJobCard";
 
 
-import { Prisma } from "@prisma/client";
 
 /* 👇 derive the exact return type */
-type JobPoster = Prisma.JobGetPayload<{
-  select: {
-    id: true;
-    jobTitle: true;
-    city: true;
-    state: true;
-    minSalary: true;
-    maxSalary: true;
-    createdAt: true;
-    expiresAt: true;
-  };
-}>;
+type JobPoster = {
+  id: string;
+  jobTitle: string;
+  city: string;
+  state: string;
+  minSalary: string;
+  maxSalary: string;
+  createdAt: Date;
+  expiresAt: Date ;
+};
+
 
 
 export default async function Page() {
