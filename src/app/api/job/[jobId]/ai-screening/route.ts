@@ -2,6 +2,28 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
+/* ✅ Correct transaction type (no Prisma import) */
+type PrismaTx = Parameters<typeof prisma.$transaction>[0] extends (
+  prisma: infer T
+) => any
+  ? T
+  : never;
+
+/* ---------------- Map helper types ---------------- */
+
+type ScreeningQuestionInput = {
+  question: string;
+  expectedAnswer: string;
+};
+
+type ApplicationRow = {
+  id: string;
+};
+
+type JobQuestionRow = {
+  id: string;
+};
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ jobId: string }> },
@@ -19,7 +41,13 @@ export async function POST(
   /* --------------------------------
      2. Parse payload
   --------------------------------- */
-  const { questions, candidateIds } = await req.json();
+  const {
+    questions,
+    candidateIds,
+  }: {
+    questions: ScreeningQuestionInput[];
+    candidateIds: string[];
+  } = await req.json();
 
   if (
     !Array.isArray(questions) ||
@@ -65,49 +93,55 @@ export async function POST(
   /* --------------------------------
      5. Transaction
   --------------------------------- */
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: PrismaTx) => {
     /* 5.1 Create AI screening questions */
-    const createdQuestions = await tx.jobAiScreeningQuestion.createMany({
-      data: questions.map((q) => ({
+    await tx.jobAiScreeningQuestion.createMany({
+      data: questions.map((q: ScreeningQuestionInput) => ({
         jobId: job.id,
         question: q.question,
         expectedAnswer: q.expectedAnswer,
       })),
     });
 
-   
-
     /* 5.2 Fetch applications being screened */
-    const applications = await tx.application.findMany({
-      where: {
-        jobId: job.id,
-        candidateId: { in: candidateIds },
-      },
-      select: {
-        id: true,
-      },
-    });
-
- /* 5.3 Fetch ONLY latest questions */
-    const jobQuestions = await tx.jobAiScreeningQuestion.findMany({
-      where: {
-        jobId: job.id,
-        question: {
-          in: questions.map((q) => q.question),
+    const applications: ApplicationRow[] =
+      await tx.application.findMany({
+        where: {
+          jobId: job.id,
+          candidateId: { in: candidateIds },
         },
-      },
-      select: { id: true },
-    });
+        select: {
+          id: true,
+        },
+      });
+
+    /* 5.3 Fetch ONLY latest questions */
+    const jobQuestions: JobQuestionRow[] =
+      await tx.jobAiScreeningQuestion.findMany({
+        where: {
+          jobId: job.id,
+          question: {
+            in: questions.map(
+              (q: ScreeningQuestionInput) => q.question
+            ),
+          },
+        },
+        select: { id: true },
+      });
 
     /* 5.4 Create empty CandidateAiAnswer entries */
-    const answerRows = [];
+    const answerRows: {
+      applicationId: string;
+      questionId: string;
+      candidateAnswer: null;
+    }[] = [];
 
     for (const app of applications) {
       for (const q of jobQuestions) {
         answerRows.push({
           applicationId: app.id,
           questionId: q.id,
-          candidateAnswer: null, // ✅ EMPTY INITIALLY
+          candidateAnswer: null,
         });
       }
     }
@@ -115,14 +149,14 @@ export async function POST(
     if (answerRows.length > 0) {
       await tx.candidateAiAnswer.createMany({
         data: answerRows,
-        skipDuplicates: true, // safety due to @@unique
+        skipDuplicates: true,
       });
     }
 
     /* 5.5 Update application status */
     await tx.application.updateMany({
       where: {
-        id: { in: applications.map((a) => a.id) },
+        id: { in: applications.map((a: ApplicationRow) => a.id) },
       },
       data: {
         status: "AI_SCREENED",

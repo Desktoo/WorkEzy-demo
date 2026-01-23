@@ -2,6 +2,28 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkFilteredCandidates } from "@/services/algorithm/checkFilteredCandidates";
 
+/* ---------------- Helper types (structural, minimal) ---------------- */
+
+type FilteringQuestion = {
+  id: string;
+  expectedAnswer: string;
+};
+
+type FilteringAnswer = {
+  questionId: string;
+  candidateAnswer: string ;
+};
+
+type ApplicationWithAnswers = {
+  id: string;
+  status: string;
+  candidate: {
+    skills: unknown[];
+    languages: unknown[];
+  };
+  filteringAnswers: FilteringAnswer[];
+};
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ jobId: string }> }
@@ -16,37 +38,39 @@ export async function GET(
       );
     }
 
-    // 1️⃣ Fetch filtering questions for the job
-    const filteringQuestions = await prisma.jobFilteringQuestion.findMany({
-      where: { jobId },
-      select: {
-        id: true,
-        expectedAnswer: true,
-      },
-    });
+    /* 1️⃣ Fetch filtering questions */
+    const filteringQuestions: FilteringQuestion[] =
+      await prisma.jobFilteringQuestion.findMany({
+        where: { jobId },
+        select: {
+          id: true,
+          expectedAnswer: true,
+        },
+      });
 
-    // 2️⃣ Fetch applications with candidate answers
-    const applications = await prisma.application.findMany({
-      where: { jobId },
-      orderBy: { appliedAt: "desc" },
-      include: {
-        candidate: {
-          include: {
-            skills: true,
-            languages: true,
+    /* 2️⃣ Fetch applications with answers */
+    const applications: ApplicationWithAnswers[] =
+      await prisma.application.findMany({
+        where: { jobId },
+        orderBy: { appliedAt: "desc" },
+        include: {
+          candidate: {
+            include: {
+              skills: true,
+              languages: true,
+            },
+          },
+          filteringAnswers: {
+            select: {
+              questionId: true,
+              candidateAnswer: true,
+            },
           },
         },
-        filteringAnswers: {
-          select: {
-            questionId: true,
-            candidateAnswer: true,
-          },
-        },
-      },
-    });
+      });
 
-    // 3️⃣ Compute filtering result per application
-    const result = applications.map((application) => {
+    /* 3️⃣ Compute filtering result */
+    const result = applications.map((application: ApplicationWithAnswers) => {
       const { right, wrong, isFiltered } = checkFilteredCandidates(
         filteringQuestions,
         application.filteringAnswers
@@ -68,8 +92,7 @@ export async function GET(
       };
     });
 
-
-    console.log("this is the data coming from the DB: ", result)
+    console.log("this is the data coming from the DB: ", result);
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
