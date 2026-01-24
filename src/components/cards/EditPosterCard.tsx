@@ -5,41 +5,55 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import { PosterPdfDocument } from "../poster/PosterPDFDocs";
 import { useHiringPosterStore } from "@/store/hiring-poster-store/useHiringPosterStore";
 import { CirclePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toPng } from "html-to-image";
+import { RefObject } from "react";
 
-export function EditPosterDetailsCard({ jobId }: { jobId: string }) {
+type Props = {
+  jobId: string;
+  posterRef: RefObject<HTMLDivElement | null>;
+};
+
+export function EditPosterDetailsCard({ jobId, posterRef }: Props) {
   const store = useHiringPosterStore();
-
-  const router = useRouter()
+  const router = useRouter();
 
   const handleAddPointer = () => {
     const current = store.requirementsText || "";
-
-    const needsNewLine =
-      current.length > 0 && !current.endsWith("\n");
-
+    const needsNewLine = current.length > 0 && !current.endsWith("\n");
     const bullet = `${needsNewLine ? "\n" : ""}• `;
 
-    store.setField(
-      "requirementsText",
-      current + bullet
-    );
-  }
+    store.setField("requirementsText", current + bullet);
+  };
+
+  const downloadPosterImage = async () => {
+    if (!posterRef.current) return;
+
+    await document.fonts.ready;
+
+    const dataUrl = await toPng(posterRef.current);
+
+    const link = document.createElement("a");
+    link.download = "hiring-poster.png";
+    link.href = dataUrl;
+    link.click();
+  };
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="gap-1">
-        <CardTitle className="text-lg font-bold">Edit Poster Details</CardTitle>
+        <CardTitle className="text-lg font-bold">
+          Edit Poster Details
+        </CardTitle>
         <p className="text-sm text-muted-foreground">
           Changes are reflected live in the preview.
         </p>
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Job Title */}
         <div className="gap-1 flex flex-col">
           <label className="text-sm font-medium">Job Title</label>
           <Input
@@ -49,6 +63,7 @@ export function EditPosterDetailsCard({ jobId }: { jobId: string }) {
           />
         </div>
 
+        {/* Location */}
         <div className="grid grid-cols-2 gap-4">
           <div className="gap-1 flex flex-col">
             <label className="text-sm font-medium">City</label>
@@ -56,18 +71,20 @@ export function EditPosterDetailsCard({ jobId }: { jobId: string }) {
               placeholder="Mumbai"
               value={store.city}
               onChange={(e) => store.setField("city", e.target.value)}
-            />{" "}
+            />
           </div>
+
           <div className="gap-1 flex flex-col">
             <label className="text-sm font-medium">State</label>
             <Input
               placeholder="Maharashtra"
               value={store.state}
               onChange={(e) => store.setField("state", e.target.value)}
-            />{" "}
+            />
           </div>
         </div>
 
+        {/* Salary */}
         <div className="grid grid-cols-2 gap-4">
           <div className="gap-1 flex flex-col">
             <label className="text-sm font-medium">Salary From (₹)</label>
@@ -77,18 +94,22 @@ export function EditPosterDetailsCard({ jobId }: { jobId: string }) {
               onChange={(e) => store.setField("salaryFrom", e.target.value)}
             />
           </div>
+
           <div className="gap-1 flex flex-col">
             <label className="text-sm font-medium">Salary To (₹)</label>
             <Input
               placeholder="50,000"
               value={store.salaryTo}
               onChange={(e) => store.setField("salaryTo", e.target.value)}
-            />{" "}
+            />
           </div>
         </div>
 
+        {/* Working Days */}
         <div className="gap-1 flex flex-col">
-          <label className="text-sm font-medium">Working Days per Week</label>
+          <label className="text-sm font-medium">
+            Working Days per Week
+          </label>
           <Input
             placeholder="5"
             value={store.workingDays}
@@ -96,6 +117,7 @@ export function EditPosterDetailsCard({ jobId }: { jobId: string }) {
           />
         </div>
 
+        {/* Requirements */}
         <div>
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">Requirements</label>
@@ -108,36 +130,27 @@ export function EditPosterDetailsCard({ jobId }: { jobId: string }) {
           <Textarea
             className="mt-2 min-h-44 max-h-44 overflow-y-auto"
             value={store.requirementsText}
-            onChange={(e) => store.setField("requirementsText", e.target.value)}
+            onChange={(e) =>
+              store.setField("requirementsText", e.target.value)
+            }
             placeholder="Key Responsibilities"
-            // value={`Key Responsibilities:\n▶ Manage incoming and outgoing inventory`}
           />
         </div>
 
+        {/* Actions */}
         <div className="flex flex-col gap-2">
-          <PDFDownloadLink
-            document={
-              <PosterPdfDocument
-                jobId={jobId}
-                jobTitle={store.jobTitle}
-                city={store.city}
-                state={store.state}
-                salaryFrom={store.salaryFrom}
-                salaryTo={store.salaryTo}
-                workingDays={store.workingDays}
-                requirements={store.requirementsText}
-              />
-            }
-            fileName="hiring-poster.pdf"
+          <Button
+            className="w-full text-white"
+            onClick={downloadPosterImage}
           >
-            {({ loading }) => (
-              <Button className="w-full text-white">
-                {loading ? "Downloading PDF" : "Download Poster"}
-              </Button>
-            )}
-          </PDFDownloadLink>
+            Download Poster
+          </Button>
 
-          <Button variant="outline" className="w-full" onClick={() => router.back()}>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => router.back()}
+          >
             Choose a different job
           </Button>
         </div>

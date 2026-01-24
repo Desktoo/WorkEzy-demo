@@ -25,7 +25,7 @@ export function HiringPosterCard({
   const router = useRouter();
 
   return (
-    <Card className="w-full max-w-xl">
+    <Card className="w-full max-w-xl bg-amber-500">
       <CardContent className="p-6 space-y-5">
         {/* Job Title */}
         <h2 className="text-xl font-bold">{jobTitle}</h2>

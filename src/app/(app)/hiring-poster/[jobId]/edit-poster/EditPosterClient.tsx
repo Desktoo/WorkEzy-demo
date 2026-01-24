@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useHiringPosterStore } from "@/store/hiring-poster-store/useHiringPosterStore";
 import { EditPosterDetailsCard } from "@/components/cards/EditPosterCard";
 import PosterPreviewCard from "@/components/cards/PosterPreviewCard";
@@ -27,6 +27,8 @@ export default function EditPosterClient({ initialData, jobId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const posterRef = useRef<HTMLDivElement | null>(null)
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -49,13 +51,13 @@ export default function EditPosterClient({ initialData, jobId }: Props) {
               </label>
             </CardTitle>
             <CardContent className="flex justify-center">
-              <PosterPreviewCard />
+              <PosterPreviewCard ref={posterRef} />
             </CardContent>
           </Card>
         </div>
 
         {/* Editor */}
-        <EditPosterDetailsCard jobId={jobId} />
+        <EditPosterDetailsCard jobId={jobId} posterRef={posterRef}/>
       </div>
     </div>
   );

@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { HiringPosterCard } from "@/components/cards/HiringPosterCard";
 import NoActiveJobCard from "@/components/cards/NoActiveJobCard";
-
-
+import { auth } from "@clerk/nextjs/server";
 
 /* 👇 derive the exact return type */
 type JobPoster = {
@@ -13,16 +12,24 @@ type JobPoster = {
   minSalary: string;
   maxSalary: string;
   createdAt: Date;
-  expiresAt: Date ;
+  expiresAt: Date;
 };
 
-
-
 export default async function Page() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const employer = await prisma.employer.findUnique({
+    where: { clerkId: userId },
+    select: { id: true },
+  });
+
+  if (!employer) throw new Error("Employer not found");
   // 🔹 Fetch all ACTIVE jobs
   const jobs = await prisma.job.findMany({
     where: {
       status: "ACTIVE",
+      employerId: employer.id,
     },
     orderBy: {
       createdAt: "desc",
