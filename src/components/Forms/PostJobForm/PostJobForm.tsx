@@ -19,6 +19,7 @@ import { useEffect } from "react";
 import JobTypeAndScheduleSection from "./JobTypeAndScheduleSection";
 import toast from "react-hot-toast";
 import { submitPostJob, updateJob } from "@/services/job.service";
+import { Card } from "@/components/ui/card";
 
 type PostJobFormProps = {
   mode?: "post" | "edit";
@@ -73,7 +74,7 @@ export default function PostJobForm({
   };
 
   return (
-    <div className="w-full max-w-5xl rounded-xl border bg-white shadow-lg p-6">
+    <Card className="max-w-5xl rounded-xl bg-white shadow-lg p-6">
       <h2 className="text-3xl font-semibold mb-2">
         {mode === "edit" ? "Edit Job" : "Post a New Job"}
       </h2>
@@ -83,7 +84,9 @@ export default function PostJobForm({
           : "Fill in the details below to post a job opening"}
       </p>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
+      <form onSubmit={form.handleSubmit(onSubmit, () => {
+        toast.error("Please fill all required fields")
+      })} className="space-y-10">
         <BasicDetailSection
           form={form}
           onSectionBlur={() => setDraft(form.getValues())}
@@ -117,6 +120,6 @@ export default function PostJobForm({
               : "Post Job"}
         </Button>
       </form>
-    </div>
+    </Card>
   );
 }

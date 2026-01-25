@@ -8,7 +8,6 @@ import { prisma } from "@/lib/prisma";
 import { getActiveUnconsumedPayment } from "@/lib/payments/GetActivePayment";
 
 export default async function Page() {
-
   const { userId } = await auth();
 
   if (!userId) {
@@ -31,7 +30,7 @@ export default async function Page() {
   }
 
   return (
-    <div className="flex flex-col gap-5 py-5">
+    <div className="flex flex-col gap-5 py-5 contain-layout">
       <div className="border-b pb-4 px-4 flex justify-between">
         <h1 className="text-xl font-bold">Post New Job</h1>
       </div>
@@ -45,7 +44,7 @@ export default async function Page() {
         </Link>
       </div>
 
-      <div className="w-full px-4 pb-20">
+      <div className="w-full px-4 pb-8">
         <div className="max-w-3xl mx-auto">
           <PostJobForm />
         </div>

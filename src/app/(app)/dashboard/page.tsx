@@ -5,7 +5,7 @@ import JobListingCard from "@/components/cards/JobListingCard";
 import NoActiveJobCard from "@/components/cards/NoActiveJobCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CircleAlert, CirclePlus } from "lucide-react";
+import { CircleAlert, CirclePlus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import axios from "axios";
@@ -13,6 +13,8 @@ import { getEmployerJobs } from "@/services/job.service";
 
 export default function Page() {
   const [jobs, setJobs] = useState<any[]>([]);
+  const [posting, setPosting] = useState(false);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -22,7 +24,11 @@ export default function Page() {
   }, []);
 
   const handlePostJobClick = async () => {
+    if (posting) return;
+
     try {
+      setPosting(true);
+
       const { data } = await axios.get("/api/job/can-post");
 
       if (data.canPost) {
@@ -30,11 +36,18 @@ export default function Page() {
         return;
       }
 
-      toast(`Active plan required to post a job \n Redirecting to Pricing Section`, { icon: <CircleAlert className="w-8 h-8" /> });
+      toast(
+        "Active plan required to post a job.\nRedirecting to Pricing Section",
+        { icon: <CircleAlert className="w-5 h-5" /> },
+      );
 
-      setTimeout(() => router.push("/pricing"), 2000);
+      setTimeout(() => {
+        router.push("/pricing");
+        setPosting(false);
+      }, 1000);
     } catch {
       toast.error("Something went wrong");
+      setPosting(false);
     }
   };
 
@@ -43,16 +56,44 @@ export default function Page() {
       <div className="border-b pb-4 mb-4 px-4 flex justify-between">
         <h1 className="text-xl font-bold">Dashboard</h1>
 
-        <Button className="flex gap-2 items-center" onClick={handlePostJobClick}>
-          <CirclePlus />
-          Post New Job
+        <Button
+          className="flex gap-2 items-center"
+          onClick={handlePostJobClick}
+          disabled={posting}
+        >
+          {posting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Checking plan...
+            </>
+          ) : (
+            <>
+              <CirclePlus />
+              Post New Job
+            </>
+          )}
         </Button>
       </div>
 
       {jobs.length > 0 ? (
         <Card className="mx-5 my-4 px-4 flex flex-col gap-6">
-          <h1 className="text-xl font-bold">Your Job Postings</h1>
+          <h1 className="text-xl font-bold ml-2">Your Job Postings</h1>
 
+          {jobs.map((job) => (
+            <JobListingCard key={job.id} {...job} />
+          ))}
+          {jobs.map((job) => (
+            <JobListingCard key={job.id} {...job} />
+          ))}
+          {jobs.map((job) => (
+            <JobListingCard key={job.id} {...job} />
+          ))}
+          {jobs.map((job) => (
+            <JobListingCard key={job.id} {...job} />
+          ))}
+          {jobs.map((job) => (
+            <JobListingCard key={job.id} {...job} />
+          ))}
           {jobs.map((job) => (
             <JobListingCard key={job.id} {...job} />
           ))}

@@ -4,15 +4,11 @@ import { useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import { Menu } from "lucide-react";
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F6F7F9]">
+    <div className="flex h-screen overflow-hidden bg-[#F6F7F9] ">
       {/* Mobile Sidebar Overlay */}
       {open && (
         <div
@@ -22,16 +18,16 @@ export default function AppLayout({
       )}
 
       {/* Sidebar */}
-      <aside
+      <div
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white
-          transform transition-transform duration-300
-          md:static md:translate-x-0
-          ${open ? "translate-x-0" : "-translate-x-full"}
-        `}
+    fixed inset-y-0 left-0 z-50 w-64 bg-white
+    transform transition-transform duration-300
+    md:sticky md:top-0 md:h-screen md:translate-x-0  
+    ${open ? "translate-x-0" : "-translate-x-full"}
+  `}
       >
         <Sidebar />
-      </aside>
+      </div>
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col">
@@ -44,9 +40,7 @@ export default function AppLayout({
         </header>
 
         {/* Page Content */}
-        <main className="min-h-screen overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

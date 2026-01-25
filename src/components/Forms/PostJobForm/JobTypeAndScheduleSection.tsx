@@ -67,6 +67,10 @@ export default function JobTypeAndScheduleSection({
         Job Type and Schedule
       </h3>
 
+      {/* Hidden registered fields */}
+      <input type="hidden" {...form.register("startTime")} />
+      <input type="hidden" {...form.register("endTime")} />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Job Type */}
         <div className="space-y-2 flex flex-col">
@@ -140,7 +144,7 @@ export default function JobTypeAndScheduleSection({
           )}
         </div>
 
-        {/* Salary Range From*/}
+        {/* Salary Range*/}
         <div className="space-y-2 flex flex-col md:col-span-2">
           <label className="text-sm font-medium">
             Salary Range (per month in ₹){" "}
@@ -174,9 +178,7 @@ export default function JobTypeAndScheduleSection({
               )}
             />
             {errors.minSalary && (
-              <p className="text-xs text-red-500">
-                {errors.minSalary.message}
-              </p>
+              <p className="text-xs text-red-500">{errors.minSalary.message}</p>
             )}
 
             {/* Salary Range To*/}
@@ -216,143 +218,154 @@ export default function JobTypeAndScheduleSection({
           <label className="text-sm font-medium">
             Office Timings <span className="text-red-500">*</span>
           </label>
-          <div className="flex gap-6">
+          <div className="gap-2">
             {/* Time From */}
-            {/* Hour */}
-            <Select
-              onValueChange={(val) => {
-                setStartTime((prev) => ({ ...prev, hour: val }));
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="09" />
-              </SelectTrigger>
-              <SelectContent>
-                {[
-                  "01",
-                  "02",
-                  "03",
-                  "04",
-                  "05",
-                  "06",
-                  "07",
-                  "08",
-                  "09",
-                  "10",
-                  "11",
-                  "12",
-                ].map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {" : "}
-            {/* Minutes */}
-            <Select
-              onValueChange={(val) => {
-                setStartTime((prev) => ({ ...prev, minute: val }));
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="00" />
-              </SelectTrigger>
-              <SelectContent>
-                {["15", "30", "45", "00"].map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-6">
+              {/* Hour */}
+              <Select
+                onValueChange={(val) => {
+                  setStartTime((prev) => ({ ...prev, hour: val }));
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="09" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[
+                    "01",
+                    "02",
+                    "03",
+                    "04",
+                    "05",
+                    "06",
+                    "07",
+                    "08",
+                    "09",
+                    "10",
+                    "11",
+                    "12",
+                  ].map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {" : "}
+              {/* Minutes */}
+              <Select
+                onValueChange={(val) => {
+                  setStartTime((prev) => ({ ...prev, minute: val }));
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="00" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["15", "30", "45", "00"].map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {/* Meridiem */}
-            <Select
-              onValueChange={(val) => {
-                setStartTime((prev) => ({ ...prev, meridiem: val }));
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="AM" />
-              </SelectTrigger>
-              <SelectContent>
-                {["AM", "PM"].map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {/* Meridiem */}
+              <Select
+                onValueChange={(val) => {
+                  setStartTime((prev) => ({ ...prev, meridiem: val }));
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="AM" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["AM", "PM"].map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {errors.startTime && (
+              <p className="text-xs text-red-500">{errors.startTime.message}</p>
+            )}
           </div>
-          <div className="flex gap-6">
-            {/* Time From */}
-            {/* Hour */}
-            <Select
-              onValueChange={(val) => {
-                setEndTime((prev) => ({ ...prev, hour: val }));
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="05" />
-              </SelectTrigger>
-              <SelectContent>
-                {[
-                  "01",
-                  "02",
-                  "03",
-                  "04",
-                  "05",
-                  "06",
-                  "07",
-                  "08",
-                  "09",
-                  "10",
-                  "11",
-                  "12",
-                ].map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {" : "}
-            {/* Minutes */}
-            <Select
-              onValueChange={(val) => {
-                setEndTime((prev) => ({ ...prev, minute: val }));
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="00" />
-              </SelectTrigger>
-              <SelectContent>
-                {["15", "30", "45", "00"].map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
-            {/* Meridiem */}
-            <Select
-              onValueChange={(val) => {
-                setEndTime((prev) => ({ ...prev, meridiem: val }));
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="PM" />
-              </SelectTrigger>
-              <SelectContent>
-                {["AM", "PM"].map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="gap-6">
+            {/* Time From */}
+            <div className="flex gap-6">
+              {/* Hour */}
+              <Select
+                onValueChange={(val) => {
+                  setEndTime((prev) => ({ ...prev, hour: val }));
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="05" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[
+                    "01",
+                    "02",
+                    "03",
+                    "04",
+                    "05",
+                    "06",
+                    "07",
+                    "08",
+                    "09",
+                    "10",
+                    "11",
+                    "12",
+                  ].map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {" : "}
+              {/* Minutes */}
+              <Select
+                onValueChange={(val) => {
+                  setEndTime((prev) => ({ ...prev, minute: val }));
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="00" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["15", "30", "45", "00"].map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Meridiem */}
+              <Select
+                onValueChange={(val) => {
+                  setEndTime((prev) => ({ ...prev, meridiem: val }));
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="PM" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["AM", "PM"].map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {errors.endTime && (
+              <p className="text-xs text-red-500">{errors.endTime.message}</p>
+            )}
           </div>
         </div>
 
