@@ -82,21 +82,6 @@ export default function Page() {
           {jobs.map((job) => (
             <JobListingCard key={job.id} {...job} />
           ))}
-          {jobs.map((job) => (
-            <JobListingCard key={job.id} {...job} />
-          ))}
-          {jobs.map((job) => (
-            <JobListingCard key={job.id} {...job} />
-          ))}
-          {jobs.map((job) => (
-            <JobListingCard key={job.id} {...job} />
-          ))}
-          {jobs.map((job) => (
-            <JobListingCard key={job.id} {...job} />
-          ))}
-          {jobs.map((job) => (
-            <JobListingCard key={job.id} {...job} />
-          ))}
         </Card>
       ) : (
         <NoActiveJobCard
