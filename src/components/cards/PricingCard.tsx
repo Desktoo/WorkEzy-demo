@@ -12,7 +12,7 @@ import { Check, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { initiateRazorpayPayment } from "@/services/payment.service";
 import { useState } from "react";
-import Spinner from "../ui/spinner";
+import { useRouter } from "next/navigation";
 
 type Feature = {
   label: string;
@@ -21,6 +21,7 @@ type Feature = {
 };
 
 type PricingCardProps = {
+  pageMode?: "pricing" | "postJob";
   planId: string;
   title: string;
   price: number;
@@ -32,6 +33,7 @@ type PricingCardProps = {
 };
 
 export default function PricingCard({
+  pageMode = "pricing",
   planId,
   title,
   price,
@@ -43,15 +45,23 @@ export default function PricingCard({
 }: PricingCardProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handlePayment = async () => {
-    try {
-      setIsLoading(true); // 🔹 start loader
-      await initiateRazorpayPayment(planId);
-    } catch (error) {
-      console.error("Payment failed:", error);
-      alert("Payment failed. Please try again.");
-    } finally {
-      setIsLoading(false); // 🔹 stop loader
+  const router = useRouter();
+
+  // TODO: delete comments
+  const handleBtnClick = async () => {
+    if (pageMode === "pricing") {
+      router.push("/dashboard/post-job");
+    } else {
+      try {
+        setIsLoading(true); // 🔹 start loader
+        await initiateRazorpayPayment(planId);
+        router.push("/dashboard/post-job");
+      } catch (error) {
+        console.error("Payment failed:", error);
+        alert("Payment failed. Please try again.");
+      } finally {
+        setIsLoading(false); // 🔹 stop loader
+      }
     }
   };
 
@@ -59,7 +69,7 @@ export default function PricingCard({
     <Card
       className={cn(
         "relative w-full max-w-md rounded-xl border bg-white shadow-sm",
-        primary && "border-[#BE4145]"
+        primary && "border-[#BE4145]",
       )}
     >
       {/* Recommended badge */}
@@ -71,10 +81,7 @@ export default function PricingCard({
 
       <CardHeader className="text-center space-y-2 pt-10">
         <CardTitle
-          className={cn(
-            "text-2xl font-bold",
-            primary && "text-[#BE4145]"
-          )}
+          className={cn("text-2xl font-bold", primary && "text-[#BE4145]")}
         >
           {title}
         </CardTitle>
@@ -88,9 +95,7 @@ export default function PricingCard({
       </CardHeader>
 
       <CardContent className="px-8 pt-6">
-        <p className="text-center text-muted-foreground mb-6">
-          {description}
-        </p>
+        <p className="text-center text-muted-foreground mb-6">{description}</p>
 
         <ul className="space-y-4">
           {features.map((feature, index) => (
@@ -103,7 +108,7 @@ export default function PricingCard({
               <span
                 className={cn(
                   "text-sm",
-                  feature.highlight && "font-semibold text-black"
+                  feature.highlight && "font-semibold text-black",
                 )}
               >
                 {feature.label}
@@ -115,20 +120,16 @@ export default function PricingCard({
 
       <CardFooter className="px-8 pt-6 pb-8">
         <Button
-          onClick={handlePayment}
+          onClick={handleBtnClick}
           disabled={isLoading}
           className={cn(
             "w-full text-base font-semibold transition-all flex items-center justify-center gap-2",
             primary
               ? "bg-[#BE4145] hover:bg-[#9c3337] text-white"
               : "bg-muted hover:bg-muted/80 text-black",
-            isLoading && "cursor-not-allowed opacity-80"
           )}
         >
-          {isLoading && (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          )}
-          {isLoading ? ` Processing...` : "Post a Job"}
+          {pageMode === "postJob" ? "Choose plan" : "Post a Job"}
         </Button>
       </CardFooter>
     </Card>

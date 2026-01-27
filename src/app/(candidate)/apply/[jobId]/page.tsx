@@ -11,13 +11,21 @@ export default async function Page(props: {
 }) {
   const { jobId } = await props.params;
 
-  const job = await prisma.job.findUnique({
+   const job = await prisma.job.findUnique({
     where: { id: jobId },
+    include: {
+      employer: {
+        select: {
+          companyLogo: true,
+        },
+      },
+      
+    },
   });
 
   console.log("this is job coming from the DB: ", job)
 
-  if (!job) {
+  if (!job || job.status === "EXPIRED") {
     return (
       <ApplyLayout>
         <NoJobFoundCard />
@@ -25,24 +33,8 @@ export default async function Page(props: {
     );
   }
 
-  /* --------- Map DB → UI Shape --------- */
-
-  const formatTime = (date: Date) => {
-    let hours = date.getUTCHours();
-    const minutes = date.getUTCMinutes().toString().padStart(2, "0");
-    const period = hours >= 12 ? "PM" : "AM";
-
-    hours = hours % 12 || 12;
-
-    return {
-      hour: String(hours),
-      minute: minutes,
-      period,
-    };
-  };
-
   return (
-    <ApplyLayout>
+    <ApplyLayout companyLogo={job.employer?.companyLogo}>
       <JobApplyCard
         jobId={job.id}
         job={{
@@ -53,8 +45,8 @@ export default async function Page(props: {
           locationType: job.locationType,
           salaryFrom: job.minSalary,
           salaryTo: job.maxSalary,
-          officeTimeFrom: formatTime(job.startTime),
-          officeTimeTo: formatTime(job.endTime),
+          startTime: job.startTime,
+          endTime: job.endTime,
           daysPerWeek: job.daysPerWeek,
           minExperience: job.minExperience,
           minEducation: job.minEducation,
@@ -68,14 +60,14 @@ export default async function Page(props: {
 
 /* ---------------- Layout Wrapper ---------------- */
 
-function ApplyLayout({ children }: { children: React.ReactNode }) {
+function ApplyLayout({ children, companyLogo }: { children: React.ReactNode, companyLogo?: string | null }) {
   return (
     <div className="min-h-screen bg-muted/30 py-12 flex flex-col items-center">
       {/* Header */}
       <header className="h-20 flex items-center justify-center border-b w-full">
         <div className="relative h-28 w-28 rounded-full overflow-hidden bg-gray-100">
           <Image
-            src="/assets/workezy-logo.png"
+            src={companyLogo || "/assets/workezy-logo.png"}
             alt="workezy"
             fill
             className="object-contain p-1"

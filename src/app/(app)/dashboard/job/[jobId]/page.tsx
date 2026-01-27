@@ -14,7 +14,7 @@ export default async function Page(props: { params: Promise<{ jobId: string }> }
   const { jobId } = await props.params;
 
   const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  if (!userId) redirect("/");
 
   const employer = await prisma.employer.findUnique({
     where: { clerkId: userId },
@@ -74,6 +74,8 @@ export default async function Page(props: { params: Promise<{ jobId: string }> }
             job={{
               jobTitle: job.jobTitle,
               companyName: employer.companyName,
+              createdAt: job.createdAt,
+              expiresAt: job.expiresAt,
               city: job.city,
               state: job.state,
               status: job.status,

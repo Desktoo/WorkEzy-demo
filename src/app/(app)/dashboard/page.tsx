@@ -13,7 +13,6 @@ import { getEmployerJobs } from "@/services/job.service";
 
 export default function Page() {
   const [jobs, setJobs] = useState<any[]>([]);
-  const [posting, setPosting] = useState(false);
 
   const router = useRouter();
 
@@ -23,33 +22,7 @@ export default function Page() {
       .catch(() => toast.error("Failed to load jobs"));
   }, []);
 
-  const handlePostJobClick = async () => {
-    if (posting) return;
 
-    try {
-      setPosting(true);
-
-      const { data } = await axios.get("/api/job/can-post");
-
-      if (data.canPost) {
-        router.push("/dashboard/post-job");
-        return;
-      }
-
-      toast(
-        "Active plan required to post a job.\nRedirecting to Pricing Section",
-        { icon: <CircleAlert className="w-5 h-5" /> },
-      );
-
-      setTimeout(() => {
-        router.push("/pricing");
-        setPosting(false);
-      }, 1000);
-    } catch {
-      toast.error("Something went wrong");
-      setPosting(false);
-    }
-  };
 
   return (
     <div className="flex flex-col py-5">
@@ -58,20 +31,10 @@ export default function Page() {
 
         <Button
           className="flex gap-2 items-center"
-          onClick={handlePostJobClick}
-          disabled={posting}
+          onClick={() => router.push("/dashboard/post-job")}
         >
-          {posting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Checking plan...
-            </>
-          ) : (
-            <>
-              <CirclePlus />
-              Post New Job
-            </>
-          )}
+          <CirclePlus />
+          Post New Job
         </Button>
       </div>
 

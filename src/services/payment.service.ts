@@ -2,7 +2,7 @@ import axios from "axios";
 
 declare global {
   interface Window {
-    Razorpay: unknown;
+    Razorpay: any;
   }
 }
 
@@ -25,48 +25,61 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
-export async function initiateRazorpayPayment(planId: string) {
+export async function initiateRazorpayPayment(
+  planId: string
+): Promise<boolean> {
   const loaded = await loadRazorpayScript();
   if (!loaded) throw new Error("Razorpay SDK failed to load");
 
   const { data } = await axios.post("/api/payments/create-order", { planId });
 
-  const options = {
-    key: process.env.NEXT_PUBLIC_RAZORPAY_API_KEY,
-    amount: data.amount,
-    currency: data.currency,
-    order_id: data.orderId,
-    name: "WorkEzy",
-    description: data.plan.name,
+  return new Promise<boolean>((resolve, reject) => {
+    const options = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_API_KEY,
+      amount: data.amount,
+      currency: data.currency,
+      order_id: data.orderId,
+      name: "WorkEzy",
+      description: data.plan.name,
 
-    handler: async (response: any) => {
-      const verifyRes = await axios.post("/api/payments/verify", {
-        razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_order_id: response.razorpay_order_id,
-        razorpay_signature: response.razorpay_signature,
+      handler: async (response: any) => {
+        try {
+          const verifyRes = await axios.post("/api/payments/verify", {
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_signature: response.razorpay_signature,
 
-        planId: data.plan.id, // ✅ REQUIRED
-        amount: data.amount / 100, // ✅ convert paise → INR
-      });
+            planId: data.plan.id,
+            amount: data.amount / 100,
+          });
 
-      if (!verifyRes.data.success) {
-        throw new Error("Payment verification failed");
-      }
-    },
+          if (!verifyRes.data.success) {
+            reject(new Error("Payment verification failed"));
+            return;
+          }
 
-    modal: {
-      ondismiss: () => {
-        console.log("Checkout closed");
+          resolve(true); 
+        } catch (err) {
+          reject(err);
+        }
       },
-    },
-  };
 
-  const razorpay = new (window as any).Razorpay(options);
+      modal: {
+        ondismiss: () => {
+          console.log("Checkout closed");
+          resolve(false); 
+        },
+      },
+    };
 
-  razorpay.on("payment.failed", function (response: any) {
-    console.error(response.error);
-    alert(response.error.description);
+    const razorpay = new window.Razorpay(options);
+
+    razorpay.on("payment.failed", function (response: any) {
+      console.error(response.error);
+      alert(response.error.description);
+      resolve(false); 
+    });
+
+    razorpay.open();
   });
-
-  razorpay.open();
 }

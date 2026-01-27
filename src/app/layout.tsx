@@ -28,6 +28,7 @@ export default function RootLayout({
         <body className={`${montserrat.variable} antialiased`}>
           {children}
           <Toaster position="top-center" />
+          <div id="modal-root" />
         </body>
       </html>
     </ClerkProvider>

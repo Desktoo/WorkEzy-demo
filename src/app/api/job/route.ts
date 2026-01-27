@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 type PrismaTx = Parameters<typeof prisma.$transaction>[0] extends (
-  prisma: infer T
+  prisma: infer T,
 ) => any
   ? T
   : never;
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     if (!userId) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     if (!employer) {
       return NextResponse.json(
         { success: false, message: "Employer not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
           success: false,
           message: "No active plan available to post a job",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     if (!plan) {
       return NextResponse.json(
         { success: false, message: "Plan not found" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -122,9 +122,7 @@ export async function POST(req: Request) {
           totalCredits: plan.creditsPerJob, // ✅ SNAPSHOT
           creditsUsed: 0,
 
-          expiresAt: new Date(
-            Date.now() + 15 * 24 * 60 * 60 * 1000
-          ),
+          expiresAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
 
           filteringQuestions: validatedData.filteringQuestions
             ? { create: validatedData.filteringQuestions }
@@ -141,10 +139,7 @@ export async function POST(req: Request) {
       return createdJob;
     });
 
-    return NextResponse.json(
-      { success: true, job },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, job }, { status: 201 });
   } catch (error) {
     console.error("[JOB_CREATE_ERROR]", error);
 
@@ -155,13 +150,13 @@ export async function POST(req: Request) {
           message: "Invalid input data",
           issues: error.issues,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       { success: false, message: "Failed to create job" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -176,6 +171,8 @@ export async function GET() {
     return NextResponse.json({ jobs: [] }, { status: 401 });
   }
 
+  const now = new Date();
+
   const employer = await prisma.employer.findUnique({
     where: { clerkId: userId },
     select: { id: true },
@@ -184,6 +181,19 @@ export async function GET() {
   if (!employer) {
     return NextResponse.json({ jobs: [] });
   }
+
+  await prisma.job.updateMany({
+    where: {
+      employerId: employer.id,
+      status: "ACTIVE",
+      expiresAt: {
+        lt: now,
+      },
+    },
+    data: {
+      status: "EXPIRED",
+    },
+  });
 
   const jobs = await prisma.job.findMany({
     where: { employerId: employer.id },
@@ -201,8 +211,11 @@ export async function GET() {
       maxSalary: true,
       status: true,
 
-      totalCredits: true,  // ✅ JOB owns credits
-      creditsUsed: true,   // ✅ JOB usage
+      createdAt: true,
+      expiresAt: true,
+
+      totalCredits: true,
+      creditsUsed: true,
 
       applications: { select: { id: true } },
     },

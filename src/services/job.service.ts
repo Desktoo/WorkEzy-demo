@@ -91,6 +91,8 @@ export async function getEmployerJobs() {
     minSalary: string;
     maxSalary: string;
     status: "ACTIVE" | "PENDING" | "EXPIRED";
+    createdAt: Date,
+    expiresAt: Date
     applicationsCount: number;
   }[];
 }

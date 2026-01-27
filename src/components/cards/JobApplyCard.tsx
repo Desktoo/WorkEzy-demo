@@ -28,6 +28,13 @@ type JobApplyCardProps = {
 };
 
 export function JobApplyCard({ job, benefits, jobId }: JobApplyCardProps) {
+
+  const formatTime = (date: Date) =>
+    new Date(date).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
       <Card className="shadow-sm">
@@ -59,7 +66,7 @@ export function JobApplyCard({ job, benefits, jobId }: JobApplyCardProps) {
 
               <MetaItem
                 icon={<Clock className="h-4 w-4" />}
-                text={`${job.officeTimeFrom.hour}:${job.officeTimeFrom.minute} ${job.officeTimeFrom.period} - ${job.officeTimeTo.hour}:${job.officeTimeTo.minute} ${job.officeTimeTo.period}`}
+                text={`${formatTime(job.startTime)} – ${formatTime(job.endTime)}`}
               />
 
               <MetaItem

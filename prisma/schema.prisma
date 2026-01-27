@@ -235,6 +235,7 @@ enum JobStatus {
   ACTIVE
   PENDING
   EXPIRED
+  REJECTED
 }
 
 enum PaymentStatus {

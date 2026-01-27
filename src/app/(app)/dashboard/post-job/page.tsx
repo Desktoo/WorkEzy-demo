@@ -11,7 +11,7 @@ export default async function Page() {
   const { userId } = await auth();
 
   if (!userId) {
-    redirect("/sign-in");
+    redirect("/");
   }
 
   const employer = await prisma.employer.findUnique({
@@ -20,12 +20,6 @@ export default async function Page() {
   });
 
   if (!employer) {
-    redirect("/pricing");
-  }
-
-  const activePayment = await getActiveUnconsumedPayment(employer.id);
-
-  if (!activePayment) {
     redirect("/pricing");
   }
 

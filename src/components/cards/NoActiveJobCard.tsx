@@ -17,22 +17,6 @@ export default function NoActiveJobCard({ title, description }: Props) {
 
   const router = useRouter()
 
-const handlePostJobClick = async () => {
-    try {
-      const { data } = await axios.get("/api/job/can-post");
-
-      if (data.canPost) {
-        router.push("/dashboard/post-job");
-        return;
-      }
-
-      toast("Active plan required to post a job \n Redirecting to Pricing Section", { icon: <CircleAlert className="w-8 h-8" />  });
-      setTimeout(() => router.push("/pricing"), 2000);
-    } catch {
-      toast.error("Something went wrong");
-    }
-  };
-
   return (
     <Card className="w-full max-w-xl mx-auto rounded-xl">
       <CardContent className="flex flex-col gap-6">
@@ -57,7 +41,7 @@ const handlePostJobClick = async () => {
         </div>
 
         {/* CTA */}
-          <Button onClick={handlePostJobClick} className="mt-4 flex w-full items-center gap-2 bg-[#BE4145] px-6 py-5 text-white hover:bg-[#a7373b]">
+          <Button onClick={() => router.push("/dashboard/post-job")} className="mt-4 flex w-full items-center gap-2 bg-[#BE4145] px-6 py-5 text-white hover:bg-[#a7373b]">
             <CirclePlus className="h-4 w-4" />
             Post a Job
           </Button>

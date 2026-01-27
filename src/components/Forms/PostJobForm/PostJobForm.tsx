@@ -15,11 +15,14 @@ import {
   PostJobFormDefaultState,
   usePostJobStore,
 } from "@/store/job/postJob.store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import JobTypeAndScheduleSection from "./JobTypeAndScheduleSection";
 import toast from "react-hot-toast";
 import { submitPostJob, updateJob } from "@/services/job.service";
 import { Card } from "@/components/ui/card";
+import axios from "axios";
+import ChoosePlan from "@/components/overlay/choosePlan";
+import { initiateRazorpayPayment } from "@/services/payment.service";
 
 type PostJobFormProps = {
   mode?: "post" | "edit";
@@ -39,6 +42,8 @@ export default function PostJobForm({
     defaultValues: PostJobFormDefaultState,
   });
 
+  const [showPlans, setShowPlans] = useState(false);
+
   useEffect(() => {
     if (mode === "edit" && initialData) {
       form.reset(initialData);
@@ -50,6 +55,21 @@ export default function PostJobForm({
     }
   }, []);
 
+  const handleSelect = async (planId: string) => {
+    try {
+      const success = await initiateRazorpayPayment(planId);
+
+      if (success) {
+        setShowPlans(false);
+        return true;
+      }
+
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
   const onSubmit = async (data: PostJobFormValues) => {
     try {
       if (mode === "edit" && jobId) {
@@ -58,8 +78,15 @@ export default function PostJobForm({
       } else {
         console.log(
           "this is the final paylaod before going to the server: ",
-          data
+          data,
         );
+
+        const res = await axios.get("/api/job/can-post");
+
+        if (!res.data.canPost) {
+          setShowPlans(true);
+          return;
+        }
 
         await submitPostJob(data);
         toast.success("Job posted successfully!");
@@ -74,52 +101,65 @@ export default function PostJobForm({
   };
 
   return (
-    <Card className="max-w-5xl rounded-xl bg-white shadow-lg p-6">
-      <h2 className="text-3xl font-semibold mb-2">
-        {mode === "edit" ? "Edit Job" : "Post a New Job"}
-      </h2>
-      <p className="text-muted-foreground text-sm mb-8">
-        {mode === "edit"
-          ? "Update the details of your job posting"
-          : "Fill in the details below to post a job opening"}
-      </p>
+    <>
+      <Card className="max-w-5xl rounded-xl bg-white shadow-lg p-6">
+        <h2 className="text-3xl font-semibold mb-2">
+          {mode === "edit" ? "Edit Job" : "Post a New Job"}
+        </h2>
+        <p className="text-muted-foreground text-sm mb-8">
+          {mode === "edit"
+            ? "Update the details of your job posting"
+            : "Fill in the details below to post a job opening"}
+        </p>
 
-      <form onSubmit={form.handleSubmit(onSubmit, () => {
-        toast.error("Please fill all required fields")
-      })} className="space-y-10">
-        <BasicDetailSection
-          form={form}
-          onSectionBlur={() => setDraft(form.getValues())}
-        />
-        <JobTypeAndScheduleSection
-          form={form}
-          onSectionBlur={() => setDraft(form.getValues())}
-        />
-        <BenefitsSection
-          form={form}
-          onSectionBlur={() => setDraft(form.getValues())}
-        />
-        <JobDescriptionSection
-          form={form}
-          onSectionBlur={() => setDraft(form.getValues())}
-        />
-        <FilteringQuestionSection
-          form={form}
-          onSectionBlur={() => setDraft(form.getValues())}
-        />
-
-        <Button
-          type="submit"
-          disabled={form.formState.isSubmitting}
-          className="w-full text-lg bg-[#BE4145]"
+        <form
+          onSubmit={form.handleSubmit(onSubmit, () => {
+            toast.error("Please fill all required fields");
+          })}
+          className="space-y-10"
         >
-          {form.formState.isSubmitting
-            ? "Saving..."
-            : mode === "edit"
-              ? "Update Job"
-              : "Post Job"}
-        </Button>
-      </form>
-    </Card>
+          <BasicDetailSection
+            form={form}
+            onSectionBlur={() => setDraft(form.getValues())}
+          />
+          <JobTypeAndScheduleSection
+            form={form}
+            onSectionBlur={() => setDraft(form.getValues())}
+          />
+          <BenefitsSection
+            form={form}
+            onSectionBlur={() => setDraft(form.getValues())}
+          />
+          <JobDescriptionSection
+            form={form}
+            onSectionBlur={() => setDraft(form.getValues())}
+          />
+          <FilteringQuestionSection
+            form={form}
+            onSectionBlur={() => setDraft(form.getValues())}
+          />
+
+          <Button
+            type="submit"
+            disabled={form.formState.isSubmitting}
+            className="w-full text-lg bg-[#BE4145]"
+          >
+            {form.formState.isSubmitting
+              ? "Saving..."
+              : mode === "edit"
+                ? "Update Job"
+                : "Post Job"}
+          </Button>
+        </form>
+      </Card>
+
+      {showPlans && (
+        <ChoosePlan
+          open={showPlans}
+          onClose={() => setShowPlans(false)}
+          onSelect={handleSelect}
+        />
+      )}
+    </>
   );
 }

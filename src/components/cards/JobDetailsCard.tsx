@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,15 +9,20 @@ import {
   MapPin,
   Building2,
   Users,
+  Calendar,
 } from "lucide-react";
+
+/* ---------------- Types ---------------- */
 
 type Props = {
   job: {
     jobTitle: string;
     companyName: string;
+    createdAt: Date;
+    expiresAt: Date;
     city: string;
     state: string;
-    status: "ACTIVE" | "PENDING" | "EXPIRED";
+    status: "ACTIVE" | "PENDING" | "EXPIRED" | "REJECTED";
     jobDescription: string;
     benefits: string[];
     filteringQuestions: {
@@ -34,6 +34,24 @@ type Props = {
   };
 };
 
+/* ---------------- Helpers ---------------- */
+
+const formatDate = (date: Date) =>
+  new Date(date).toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+const STATUS_COLOR: Record<Props["job"]["status"], string> = {
+  ACTIVE: "bg-green-600/30 border-green-800 border-2 text-green-800",
+  PENDING: "bg-yellow-500/30 border-yellow-800 border-2 text-yellow-800",
+  EXPIRED: "bg-gray-400/30 border-gray-500 border-2 text-gray-500",
+  REJECTED: "bg-red-600/30 border-red-800 border-2 text-red-800",
+};
+
+/* ---------------- Component ---------------- */
+
 export function JobDetailsAndScreeningCard({ job }: Props) {
   return (
     <Card className="w-full">
@@ -42,23 +60,38 @@ export function JobDetailsAndScreeningCard({ job }: Props) {
           <div>
             <h1 className="text-3xl font-bold">{job.jobTitle}</h1>
 
-            <div className="mt-2 flex flex-col gap-1 text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                <span>{job.companyName}</span>
+            <div className="mt-2 flex gap-10 text-muted-foreground">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  <span>{job.companyName}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  <span>
+                    {job.city}, {job.state}
+                  </span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>
-                  {job.city}, {job.state}
-                </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span>posted on {formatDate(job.createdAt)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span>expires on {formatDate(job.expiresAt)}</span>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="flex flex-col items-end gap-3">
-            <span className={`rounded-full ${job.status === "ACTIVE" ? "bg-green-600" : "bg-yellow-500"}  px-3 py-1 text-xs font-semibold text-white`}>
+            <span
+              className={`rounded-full ${STATUS_COLOR[job.status]} px-3 py-1 text-xs font-semibold `}
+            >
               {job.status}
             </span>
 
@@ -73,9 +106,7 @@ export function JobDetailsAndScreeningCard({ job }: Props) {
       <Separator />
 
       <CardHeader>
-        <CardTitle className="text-2xl font-bold">
-          Job Description
-        </CardTitle>
+        <CardTitle className="text-2xl font-bold">Job Description</CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -84,9 +115,7 @@ export function JobDetailsAndScreeningCard({ job }: Props) {
         <Separator />
 
         <div>
-          <p className="font-semibold text-lg mb-3">
-            Benefits Offered
-          </p>
+          <p className="font-semibold text-lg mb-3">Benefits Offered</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {job.benefits.map((benefit) => (
               <div key={benefit} className="flex items-center gap-2">
@@ -100,9 +129,7 @@ export function JobDetailsAndScreeningCard({ job }: Props) {
         <Separator />
 
         <div>
-          <p className="font-semibold text-lg mb-3">
-            Screening Questions
-          </p>
+          <p className="font-semibold text-lg mb-3">Screening Questions</p>
 
           {job.filteringQuestions.map((q) => (
             <QuestionRow
@@ -116,6 +143,8 @@ export function JobDetailsAndScreeningCard({ job }: Props) {
     </Card>
   );
 }
+
+/* ---------------- Helper ---------------- */
 
 function QuestionRow({
   question,
