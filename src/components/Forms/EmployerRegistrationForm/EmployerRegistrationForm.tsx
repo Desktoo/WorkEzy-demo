@@ -28,6 +28,7 @@ import {
   updateEmployerProfile,
 } from "@/services/employerRegistration.service";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 type EmployerFormMode = "register" | "update";
 
@@ -103,6 +104,12 @@ export default function EmployerRegistrationForm({
 
   return (
     <Card className="w-full max-w-4xl border bg-white shadow-lg mx-auto">
+      {mode === "update" && (
+        <Button onClick={() => router.back()}>
+          <ArrowLeft />
+          Back
+        </Button>
+      )}
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold text-[#BE4145]">
           {mode === "register"

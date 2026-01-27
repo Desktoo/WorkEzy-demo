@@ -43,6 +43,10 @@ export default function Page() {
     }
   };
 
+  const handleBack = () => {
+    router.back()
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <Link href="/" className="mb-8">
@@ -60,6 +64,7 @@ export default function Page() {
         value={mobile}
         onVerify={handleVerify}
         onResend={handleResend}
+        onBack={handleBack}
         isLoading={isLoading}
       />
     </div>

@@ -7,7 +7,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 type OtpType = "email" | "mobile";
 
@@ -16,7 +16,8 @@ type Props = {
   value: string; // email or mobile
   onVerify: (otp: string) => void;
   onResend: () => void;
-  isLoading: boolean
+  onBack: () => void;
+  isLoading: boolean;
 };
 
 export default function OtpVerificationForm({
@@ -24,11 +25,11 @@ export default function OtpVerificationForm({
   value,
   onVerify,
   onResend,
-  isLoading
+  onBack,
+  isLoading,
 }: Props) {
   const [otp, setOtp] = useState("");
   const [timer, setTimer] = useState(30);
-  
 
   useEffect(() => {
     if (timer === 0) return;
@@ -44,6 +45,19 @@ export default function OtpVerificationForm({
 
   return (
     <div className="w-full max-w-md rounded-xl border bg-white shadow-lg p-8">
+      <div className="mb-4">
+        <button
+          onClick={() => {
+            setOtp("");
+            setTimer(30);
+            onBack();
+          }}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-black"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+      </div>
       {/* Title */}
       <h2 className="text-2xl font-semibold text-center mb-2">
         Verify Your {isEmail ? "Email" : "Mobile Number"}

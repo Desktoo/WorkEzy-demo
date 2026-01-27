@@ -1,4 +1,3 @@
-// components/candidate/CandidateApplyCard.tsx
 "use client";
 
 import { useEffect } from "react";

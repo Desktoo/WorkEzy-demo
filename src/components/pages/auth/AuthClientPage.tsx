@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import {  useState } from "react";
-import {  useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 import AuthLoginForm from "@/components/Forms/AuthLoginForm";
@@ -16,7 +16,6 @@ export default function AuthClientPage() {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
 
   const { sendEmailOtp, verifyEmailOtp } = useAuthService();
   const router = useRouter();
@@ -55,9 +54,7 @@ export default function AuthClientPage() {
         // Give the browser 500ms to write the Clerk cookie before redirecting
         setTimeout(() => {
           if (result.isNewUser) {
-            router.push(
-              `/employer-registration?email=${email}`
-            );
+            router.push(`/employer-registration?email=${email}`);
           } else {
             router.push(`/post-auth?`);
           }
@@ -84,6 +81,11 @@ export default function AuthClientPage() {
     }
   };
 
+  const handleBackToEmail = () => {
+    setStep("email");
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-4">
       {/* Logo */}
@@ -108,6 +110,7 @@ export default function AuthClientPage() {
             value={email}
             onVerify={handleVerifyOtp}
             onResend={handleResendOtp}
+            onBack={handleBackToEmail}
             isLoading={isLoading}
           />
         )}
