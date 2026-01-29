@@ -9,6 +9,8 @@ import {
   fetchJobApplyMeta,
   FilteringQuestion,
 } from "@/services/jobApplyMeta.service";
+import axios from "axios";
+import { CandidateApplyFormValues } from "@/lib/validations/frontend/candidate.schema";
 
 export default function CandidateApplyPage() {
   const searchParams = useSearchParams();
@@ -21,6 +23,36 @@ export default function CandidateApplyPage() {
   const [filteringQuestions, setFilteringQuestions] = useState<
     FilteringQuestion[]
   >([]);
+
+  const [existingCandidate, setExistingCandidate] = useState<any | null>(null);
+  const [isPrefillLoading, setIsPrefillLoading] = useState(true);
+
+  function mapCandidateToForm(candidate: any): CandidateApplyFormValues {
+    return {
+      photo: undefined, 
+      fullName: candidate.fullName ?? "",
+      email: candidate.email ?? "",
+      phoneNumber: candidate.phoneNumber ?? "",
+      gender: candidate.gender ?? "",
+      dateOfBirth: candidate.dateOfBirth
+        ? new Date(candidate.dateOfBirth).toISOString().slice(0, 10)
+        : "",
+      age: candidate.age ?? undefined,
+      highestEducation: candidate.highestEducation ?? "",
+      educationSpecialization: candidate.educationSpecialization ?? "",
+      industry: candidate.industry ?? "",
+      yearsOfExperience: candidate.yearsOfExperience ?? "",
+      skills: candidate.skills?.map((s: any) => s.name) ?? [],
+      languages: candidate.languages?.map((l: any) => l.languageName) ?? [],
+      noticePeriod: candidate.noticePeriod ?? undefined,
+      city: candidate.city ?? "",
+      state: candidate.state ?? "",
+      country: candidate.country ?? "India",
+
+      // 🔒 NEVER prefill filtering answers
+      filteringAnswers: [],
+    };
+  }
 
   useEffect(() => {
     async function loadApplyMeta() {
@@ -35,6 +67,31 @@ export default function CandidateApplyPage() {
 
     loadApplyMeta();
   }, [jobId]);
+
+  useEffect(() => {
+    if (!phoneNumberFromUrl) {
+      setIsPrefillLoading(false);
+      return;
+    }
+
+    const fetchExistingCandidate = async () => {
+      try {
+        const { data } = await axios.get("/api/candidate/by-mobile", {
+          params: { mobile: phoneNumberFromUrl },
+        });
+
+        if (data.exists) {
+          setExistingCandidate(data.candidate);
+        }
+      } catch (error) {
+        console.error("Failed to fetch candidate by mobile", error);
+      } finally {
+        setIsPrefillLoading(false);
+      }
+    };
+
+    fetchExistingCandidate();
+  }, [phoneNumberFromUrl]);
 
   return (
     <div className="min-h-screen flex flex-col justify-center gap-5 bg-background py-12 px-4">
@@ -56,8 +113,13 @@ export default function CandidateApplyPage() {
         <CandidateApplyCard
           phoneFromUrl={phoneNumberFromUrl ?? undefined}
           jobId={jobId}
-          mode="apply"
-          filteringQuestions={filteringQuestions}
+          mode={existingCandidate ? "update" : "apply"}
+          candidateId={existingCandidate?.id}
+          initialData={
+            existingCandidate
+              ? mapCandidateToForm(existingCandidate)
+              : undefined
+          }
         />
       </div>
 

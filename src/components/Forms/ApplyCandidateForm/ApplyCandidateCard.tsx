@@ -53,6 +53,7 @@ type Props = {
   initialData?: CandidateApplyFormValues;
 
   filteringQuestions?: FilteringQuestion[]; // ✅ passed from server/page
+
 };
 
 /* ---------------- Component ---------------- */
@@ -82,15 +83,15 @@ export function CandidateApplyCard({
   /* ---------------- Restore Draft / Initial Data ---------------- */
 
   useEffect(() => {
+    console.log("this is filtering Question object: ", filteringQuestions);
 
-    console.log("this is filtering Question object: ", filteringQuestions)
+    if (initialData) {
+      form.reset(initialData);
+      return;
+    }
 
     if (mode === "apply" && draft) {
       form.reset(draft);
-    }
-
-    if (mode === "update" && initialData) {
-      form.reset(initialData);
     }
 
     if (phoneFromUrl && !form.getValues("phoneNumber")) {
@@ -121,7 +122,7 @@ export function CandidateApplyCard({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Something went wrong"
+        error instanceof Error ? error.message : "Something went wrong",
       );
     }
   };
@@ -211,8 +212,8 @@ export function CandidateApplyCard({
             {form.formState.isSubmitting
               ? "Saving..."
               : mode === "apply"
-              ? "Save and Apply"
-              : "Update Details"}
+                ? "Save and Apply"
+                : "Update Details"}
           </Button>
         </form>
       </CardContent>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useApplicationStore } from "@/store/applicationStore";
+import { getDisplayStatus, useApplicationStore } from "@/store/applicationStore";
 import CandidateAccordionCard from "@/components/cards/CandidateCard";
 import Spinner from "@/components/ui/spinner";
 
-export default function AllCandidateList() {
+export default function AllCandidateList({ isPremium }: { isPremium: boolean }) {
   const { all, loading } = useApplicationStore();
 
   if (loading) {
@@ -12,11 +12,7 @@ export default function AllCandidateList() {
   }
 
   if (all.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No candidates yet.
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">No candidates yet.</p>;
   }
 
   return (
@@ -25,8 +21,10 @@ export default function AllCandidateList() {
         <CandidateAccordionCard
           key={application.id}
           applicationId={application.id}
-          applicationStatus={application.status}
+          applicationStatus={getDisplayStatus(application.status, "all")}
           candidate={application.candidate}
+          filteringQA={application.filteringQA}
+          isPremium={isPremium}
         />
       ))}
     </div>

@@ -37,23 +37,19 @@ type Props = {
    Component
 --------------------------------- */
 
-export default function AiScreenQuesDialog({
-  jobId,
-  open,
-  onClose,
-}: Props) {
-
+export default function AiScreenQuesDialog({ jobId, open, onClose }: Props) {
   const [questions, setQuestions] = useState<AiScreeningQuestion[]>([
     { question: "", expectedAnswer: "YES" },
   ]);
 
   const selectedCandidateIds = useApplicationStore(
-    (s) => s.selectedCandidateIds
+    (s) => s.selectedCandidateIds,
   );
   const clearSelectedCandidates = useApplicationStore(
-    (s) => s.clearSelectedCandidates
+    (s) => s.clearSelectedCandidates,
   );
 
+  const { incrementAiAttempt } = useApplicationStore();
   /* --------------------------------
      Handlers
   --------------------------------- */
@@ -61,10 +57,7 @@ export default function AiScreenQuesDialog({
   const addQuestion = () => {
     if (questions.length >= 3) return;
 
-    setQuestions([
-      ...questions,
-      { question: "", expectedAnswer: "YES" },
-    ]);
+    setQuestions([...questions, { question: "", expectedAnswer: "YES" }]);
   };
 
   const updateQuestion = (index: number, value: string) => {
@@ -73,10 +66,7 @@ export default function AiScreenQuesDialog({
     setQuestions(copy);
   };
 
-  const updateExpectedAnswer = (
-    index: number,
-    value: "YES" | "NO"
-  ) => {
+  const updateExpectedAnswer = (index: number, value: "YES" | "NO") => {
     const copy = [...questions];
     copy[index].expectedAnswer = value;
     setQuestions(copy);
@@ -90,17 +80,17 @@ export default function AiScreenQuesDialog({
   const submit = async () => {
     // ❌ No candidates selected
     if (selectedCandidateIds.length === 0) {
-      toast.error("No Candidates Selected")
+      toast.error("No Candidates Selected");
       return;
     }
 
     // ❌ No valid questions
     const validQuestions = questions.filter(
-      (q) => q.question.trim().length > 0
+      (q) => q.question.trim().length > 0,
     );
 
     if (validQuestions.length === 0) {
-      toast.error("No questions Added")
+      toast.error("No questions Added");
       return;
     }
 
@@ -110,18 +100,20 @@ export default function AiScreenQuesDialog({
     };
 
     try {
-      await axios.post(
-        `/api/job/${jobId}/ai-screening`,
-        payload
-      );
+      await axios.post(`/api/job/${jobId}/ai-screening`, payload);
+      
+      selectedCandidateIds.forEach((candidateId) => {
+        incrementAiAttempt(candidateId);
+      });
 
-      toast.success("AI Screening started")
+      toast.success("AI Screening started");
 
       clearSelectedCandidates();
+
       onClose();
     } catch (error) {
-      console.log(" this error occured while starting AI Screening: ", error)
-      toast.error("Failed to start AI Screening")
+      console.log(" this error occured while starting AI Screening: ", error);
+      toast.error("Failed to start AI Screening");
     }
   };
 
@@ -133,9 +125,7 @@ export default function AiScreenQuesDialog({
     <AlertDialog open={open} onOpenChange={onClose}>
       <AlertDialogContent className="max-w-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            Start AI Screening
-          </AlertDialogTitle>
+          <AlertDialogTitle>Start AI Screening</AlertDialogTitle>
         </AlertDialogHeader>
 
         <div className="space-y-4">
@@ -149,9 +139,7 @@ export default function AiScreenQuesDialog({
                 <Input
                   placeholder={`Question ${i + 1}`}
                   value={q.question}
-                  onChange={(e) =>
-                    updateQuestion(i, e.target.value)
-                  }
+                  onChange={(e) => updateQuestion(i, e.target.value)}
                 />
 
                 {i > 0 && (
@@ -168,38 +156,23 @@ export default function AiScreenQuesDialog({
 
               {/* Expected answer */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium">
-                  Expected Answer
-                </Label>
+                <Label className="text-sm font-medium">Expected Answer</Label>
 
                 <RadioGroup
                   value={q.expectedAnswer}
                   onValueChange={(val) =>
-                    updateExpectedAnswer(
-                      i,
-                      val as "YES" | "NO"
-                    )
+                    updateExpectedAnswer(i, val as "YES" | "NO")
                   }
                   className="flex gap-6"
                 >
                   <div className="flex items-center gap-2">
-                    <RadioGroupItem
-                      value="YES"
-                      id={`yes-${i}`}
-                    />
-                    <Label htmlFor={`yes-${i}`}>
-                      Yes
-                    </Label>
+                    <RadioGroupItem value="YES" id={`yes-${i}`} />
+                    <Label htmlFor={`yes-${i}`}>Yes</Label>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <RadioGroupItem
-                      value="NO"
-                      id={`no-${i}`}
-                    />
-                    <Label htmlFor={`no-${i}`}>
-                      No
-                    </Label>
+                    <RadioGroupItem value="NO" id={`no-${i}`} />
+                    <Label htmlFor={`no-${i}`}>No</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -218,13 +191,9 @@ export default function AiScreenQuesDialog({
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel>
-            Cancel
-          </AlertDialogCancel>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
 
-          <Button onClick={submit}>
-            Start Screening
-          </Button>
+          <Button onClick={submit}>Start Screening</Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

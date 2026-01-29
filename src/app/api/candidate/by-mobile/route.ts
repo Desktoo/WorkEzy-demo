@@ -37,3 +37,30 @@ export async function POST(req: Request) {
     candidate,
   });
 }
+
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const mobile = searchParams.get("mobile");
+
+  if (!mobile) {
+    return NextResponse.json({ error: "Mobile required" }, { status: 400 });
+  }
+
+  const candidate = await prisma.candidate.findUnique({
+    where: { phoneNumber: mobile },
+    include: {
+      skills: true,
+      languages: true,
+    },
+  });
+
+  if (!candidate) {
+    return NextResponse.json({ exists: false });
+  }
+
+  return NextResponse.json({
+    exists: true,
+    candidate,
+  });
+}

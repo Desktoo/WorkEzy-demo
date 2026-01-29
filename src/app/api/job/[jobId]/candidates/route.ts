@@ -6,12 +6,13 @@ import { checkFilteredCandidates } from "@/services/algorithm/checkFilteredCandi
 
 type FilteringQuestion = {
   id: string;
+  question: string;
   expectedAnswer: string;
 };
 
 type FilteringAnswer = {
   questionId: string;
-  candidateAnswer: string ;
+  candidateAnswer: string;
 };
 
 type ApplicationWithAnswers = {
@@ -22,11 +23,19 @@ type ApplicationWithAnswers = {
     languages: unknown[];
   };
   filteringAnswers: FilteringAnswer[];
+  aiAnswers: {
+    candidateAnswer: string | null;
+    question: {
+      id: string;
+      question: string;
+      expectedAnswer: string;
+    };
+  }[];
 };
 
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ jobId: string }> }
+  { params }: { params: Promise<{ jobId: string }> },
 ) {
   try {
     const { jobId } = await params;
@@ -34,7 +43,7 @@ export async function GET(
     if (!jobId) {
       return NextResponse.json(
         { message: "Job ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,6 +53,7 @@ export async function GET(
         where: { jobId },
         select: {
           id: true,
+          question: true,
           expectedAnswer: true,
         },
       });
@@ -66,14 +76,25 @@ export async function GET(
               candidateAnswer: true,
             },
           },
+          aiAnswers: {
+            include: {
+              question: {
+                select: {
+                  id: true,
+                  question: true,
+                  expectedAnswer: true,
+                },
+              },
+            },
+          },
         },
       });
 
     /* 3️⃣ Compute filtering result */
-    const result = applications.map((application: ApplicationWithAnswers) => {
+    const result = applications.map((application) => {
       const { right, wrong, isFiltered } = checkFilteredCandidates(
         filteringQuestions,
-        application.filteringAnswers
+        application.filteringAnswers,
       );
 
       const totalAnswered = right + wrong;
@@ -89,10 +110,30 @@ export async function GET(
           wrong,
           isFiltered,
         },
+        filteringQA: filteringQuestions.map((q) => {
+          const answer = application.filteringAnswers.find(
+            (a) => a.questionId === q.id,
+          );
+
+          return {
+            questionId: q.id,
+            question: q.question,
+            expectedAnswer: q.expectedAnswer,
+            candidateAnswer: answer?.candidateAnswer ?? null,
+            isCorrect: answer?.candidateAnswer === q.expectedAnswer,
+          };
+        }),
+        aiQA: application.aiAnswers.map((ans) => ({
+          id: ans.question.id,
+          question: ans.question.question,
+          expectedAnswer: ans.question.expectedAnswer,
+          candidateAnswer: ans.candidateAnswer,
+          isCorrect:
+            ans.candidateAnswer?.trim().toLowerCase() ===
+            ans.question.expectedAnswer.trim().toLowerCase(),
+        })),
       };
     });
-
-    console.log("this is the data coming from the DB: ", result);
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
@@ -100,7 +141,7 @@ export async function GET(
 
     return NextResponse.json(
       { message: "Failed to fetch candidates" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

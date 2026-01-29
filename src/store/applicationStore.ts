@@ -17,6 +17,22 @@ export type FilteringStats = {
   isFiltered: boolean;
 };
 
+export type FilteringQA = {
+  questionId: string;
+  question: string;
+  expectedAnswer: string;
+  candidateAnswer: string | null;
+  isCorrect: boolean;
+};
+
+export type AIScreeningQA = {
+  id: string;
+  question: string;
+  expectedAnswer: string;
+  candidateAnswer: string | null;
+  isCorrect: boolean;
+};
+
 export type Application = {
   id: string;
   status: ApplicationStatus;
@@ -38,6 +54,8 @@ export type Application = {
     languages: { languageName: string }[];
   };
   filteringStats: FilteringStats;
+  filteringQA: FilteringQA[];
+  aiScreeningQA: AIScreeningQA[];
 };
 
 /* ---------------- Store ---------------- */
@@ -57,6 +75,9 @@ type ApplicationStore = {
 
   toggleCandidateSelection: (candidateId: string) => void;
   clearSelectedCandidates: () => void;
+
+  aiAttemptsByApplication: Record<string, number>;
+  incrementAiAttempt: (applicationId: string) => void;
 };
 
 export const useApplicationStore = create<ApplicationStore>((set) => ({
@@ -74,9 +95,7 @@ export const useApplicationStore = create<ApplicationStore>((set) => ({
     try {
       set({ loading: true, error: null });
 
-      const { data } = await axios.get(
-        `/api/job/${jobId}/candidates`
-      );
+      const { data } = await axios.get(`/api/job/${jobId}/candidates`);
 
       const normalized: Application[] = data.map((app: any) => {
         const total = app.filteringStats.totalQuestions;
@@ -95,6 +114,8 @@ export const useApplicationStore = create<ApplicationStore>((set) => ({
             percentage,
             isFiltered: app.filteringStats.isFiltered,
           },
+          filteringQA: app.filteringQA,
+          aiScreeningQA: app.aiQA ?? [], // ✅ ONLY ADDITION
         };
       });
 
@@ -106,17 +127,14 @@ export const useApplicationStore = create<ApplicationStore>((set) => ({
         filtered: normalized.filter(
           (a) =>
             a.filteringStats.totalQuestions > 0 &&
-            a.filteringStats.isFiltered &&
-            a.status !== "AI_SCREENED" &&
-            a.status !== "AI_FIT" &&
-            a.status !== "AI_NOT_FIT"
+            a.filteringStats.isFiltered,
         ),
 
         aiScreened: normalized.filter(
           (a) =>
             a.status === "AI_SCREENED" ||
             a.status === "AI_FIT" ||
-            a.status === "AI_NOT_FIT"
+            a.status === "AI_NOT_FIT",
         ),
       });
     } catch (error) {
@@ -137,25 +155,21 @@ export const useApplicationStore = create<ApplicationStore>((set) => ({
               ...app,
               status: "INTERESTED" as ApplicationStatus,
             }
-          : app
+          : app,
       );
 
       return {
         all: updatedAll,
-        filtered: updatedAll.filter(
-          (a) =>
-            a.filteringStats.isFiltered &&
-            !["AI_SCREENED", "AI_FIT", "AI_NOT_FIT"].includes(a.status)
-        ),
+        filtered: updatedAll.filter((a) => a.filteringStats.isFiltered),
         aiScreened: updatedAll.filter((a) =>
-          ["AI_SCREENED", "AI_FIT", "AI_NOT_FIT"].includes(a.status)
+          ["AI_SCREENED", "AI_FIT", "AI_NOT_FIT"].includes(a.status),
         ),
       };
     });
 
     try {
       await axios.patch(
-        `/api/applications/${applicationId}/mark-interested`
+        `/api/applications/${applicationId}/mark-interested`,
       );
     } catch (error) {
       console.error("Failed to update application status:", error);
@@ -171,6 +185,26 @@ export const useApplicationStore = create<ApplicationStore>((set) => ({
         : [...state.selectedCandidateIds, candidateId],
     })),
 
-  clearSelectedCandidates: () =>
-    set({ selectedCandidateIds: [] }),
+  clearSelectedCandidates: () => set({ selectedCandidateIds: [] }),
+
+  aiAttemptsByApplication: {},
+
+  incrementAiAttempt: (applicationId) =>
+    set((state) => ({
+      aiAttemptsByApplication: {
+        ...state.aiAttemptsByApplication,
+        [applicationId]:
+          (state.aiAttemptsByApplication[applicationId] ?? 0) + 1,
+      },
+    })),
 }));
+
+export function getDisplayStatus(
+  realStatus: ApplicationStatus,
+  tab: "all" | "filtered" | "ai",
+): ApplicationStatus {
+  if (tab !== "ai" && realStatus.startsWith("AI_")) {
+    return "AI_SCREENED";
+  }
+  return realStatus;
+}

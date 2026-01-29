@@ -4,7 +4,8 @@ import axios from "axios";
 type Job = {
   id: string;
   jobTitle: string;
-  totalCredits: number; // ✅ NEW
+  planType: "Standard" | "Premium"
+  totalCredits: number; 
   creditsUsed: number;
 };
 

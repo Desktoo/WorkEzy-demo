@@ -1,13 +1,13 @@
 "use client";
 
-import { useApplicationStore } from "@/store/applicationStore";
+import { getDisplayStatus, useApplicationStore } from "@/store/applicationStore";
 import CandidateAccordionCard from "@/components/cards/CandidateCard";
 import Spinner from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useParams } from "next/navigation";
 
-export default function AiScreenedCandidateList() {
+export default function AiScreenedCandidateList({ isPremium }: { isPremium: boolean }) {
   const { jobId } = useParams<{ jobId: string }>();
   const { aiScreened, loading, fetchApplications } =
     useApplicationStore();
@@ -56,9 +56,12 @@ export default function AiScreenedCandidateList() {
           )}
 
           <CandidateAccordionCard
+            isPremium={isPremium}
             applicationId={application.id}
-            applicationStatus={application.status}
+            applicationStatus={getDisplayStatus(application.status, "ai")}
             candidate={application.candidate}
+            filteringQA={application.filteringQA}
+            AIScreeningQA={application.aiScreeningQA}
           />
         </div>
       ))}

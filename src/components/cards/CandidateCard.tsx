@@ -41,6 +41,9 @@ export default function CandidateAccordionCard({
   applicationId,
   applicationStatus,
   candidate,
+  isPremium,
+  filteringQA,
+  AIScreeningQA = [],
 }: {
   applicationId: string;
   applicationStatus: keyof typeof statusLabelMap;
@@ -62,6 +65,21 @@ export default function CandidateAccordionCard({
     skills: { name: string }[];
     languages: { languageName: string }[];
   };
+  filteringQA: {
+    questionId: string;
+    question: string;
+    expectedAnswer: string;
+    candidateAnswer: string | null;
+    isCorrect: boolean;
+  }[];
+  AIScreeningQA?: {
+    id: string;
+    question: string;
+    expectedAnswer: string;
+    candidateAnswer: string | null;
+    isCorrect: boolean;
+  }[];
+  isPremium?: boolean;
 }) {
   const [value, setValue] = React.useState<string | undefined>(undefined);
   const accordionValue = `candidate-${applicationId}`;
@@ -74,8 +92,15 @@ export default function CandidateAccordionCard({
   const { selectedCandidateIds, toggleCandidateSelection } =
     useApplicationStore();
 
-  // For Later Logic of sending candidateIds for processing 
-  // const selectedIds = useApplicationStore((s) => s.selectedCandidateIds);
+  const isOpen = value === accordionValue;
+
+  const MAX_ATTEMPTS = 2;
+
+  const attempts = useApplicationStore(
+    (s) => s.aiAttemptsByApplication[applicationId] ?? 0,
+  );
+
+  const isLimitReached = attempts >= MAX_ATTEMPTS;
 
   return (
     <Accordion
@@ -86,13 +111,16 @@ export default function CandidateAccordionCard({
       className="w-full"
     >
       <AccordionItem value={accordionValue} className="border-none">
-        <Card className="overflow-hidden p-5 ">
+        <Card className="overflow-hidden p-5 gap-0">
           {/* ---------------- Header ---------------- */}
-          <div className="flex justify-between w-full">
-            <Checkbox
-              checked={selectedCandidateIds.includes(candidate.id)}
-              onCheckedChange={() => toggleCandidateSelection(candidate.id)}
-            />
+          <div className="flex mb-4 justify-between w-full">
+            {isPremium && (
+              <Checkbox
+                disabled={isLimitReached}
+                checked={selectedCandidateIds.includes(candidate.id)}
+                onCheckedChange={() => toggleCandidateSelection(candidate.id)}
+              />
+            )}
 
             <Badge
               className={`text-white ${statusColorMap[applicationStatus]}`}
@@ -100,7 +128,7 @@ export default function CandidateAccordionCard({
               {statusLabelMap[applicationStatus]}
             </Badge>
           </div>
-          <CardHeader className="flex flex-row gap-4 p-4  border rounded-xl bg-neutral-100">
+          <CardHeader className="flex flex-row gap-4 p-4  border rounded-t-xl bg-neutral-100">
             <div className="flex justify-between w-full">
               {/* Left */}
               <div className="flex gap-4">
@@ -139,7 +167,7 @@ export default function CandidateAccordionCard({
                   }
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  View Details
+                  {isOpen ? "Hide Details" : "View Details"}
                 </Button>
               </div>
             </div>
@@ -147,21 +175,21 @@ export default function CandidateAccordionCard({
 
           {/* ---------------- Content ---------------- */}
           <AccordionContent>
-            <CardContent className="p-4 space-y-6 text-sm border rounded-xl bg-neutral-100">
+            <CardContent className="p-4 space-y-6 text-sm border rounded-b-xl bg-neutral-100">
               {/* -------- Personal Details -------- */}
               <section>
                 <p className="font-bold text-base mb-2">Personal Information</p>
                 <Separator />
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <Info label="Age" value={`${candidate.age} years`} />
-                  <Info
+                  {/* <Info
                     label="Date of Birth"
                     value={
                       candidate.dateOfBirth
                         ? new Date(candidate.dateOfBirth).toLocaleDateString()
                         : "—"
                     }
-                  />
+                  /> */}
                   <Info
                     label="Phone"
                     value={
@@ -191,7 +219,7 @@ export default function CandidateAccordionCard({
                     }
                   />
 
-                  <Info label="Email" value={candidate.email || "—"} />
+                  {/* <Info label="Email" value={candidate.email || "—"} /> */}
                 </div>
               </section>
 
@@ -235,6 +263,115 @@ export default function CandidateAccordionCard({
                   <Info label="State" value={candidate.state} />
                 </div>
               </section>
+
+              {/* -------- Filtering Questions -------- */}
+              <section>
+                <p className="font-bold text-base mb-2">Filtering Questions</p>
+                <Separator />
+
+                <div className="space-y-3 mt-4">
+                  {filteringQA.length === 0 && (
+                    <p className="text-muted-foreground">
+                      No filtering questions
+                    </p>
+                  )}
+
+                  {filteringQA.map((qa, index) => (
+                    <div
+                      key={qa.questionId}
+                      className="p-3 rounded-md border bg-white"
+                    >
+                      <div className="flex justify-between">
+                        <p className="font-medium">
+                          Q{index + 1}. {qa.question}
+                        </p>
+                        <Badge
+                          variant="outline"
+                          className={
+                            qa.isCorrect
+                              ? "border-green-600 text-green-700"
+                              : "border-red-600 text-red-700"
+                          }
+                        >
+                          {qa.isCorrect ? "Correct" : "Incorrect"}
+                        </Badge>
+                      </div>
+
+                      <div className="flex flex-col gap-2 mt-2">
+                        <p className="text-sm mt-1">
+                          Expected answer:{" "}
+                          <span className="font-medium">
+                            {qa.expectedAnswer}
+                          </span>
+                        </p>
+
+                        <p className="text-sm">
+                          Candidate Answer:{" "}
+                          <span className="font-medium">
+                            {qa.candidateAnswer ?? "Not answered"}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {isPremium && (
+                <section>
+                  <p className="font-bold text-base mb-2 mt-6">
+                    AI Screening Questions
+                  </p>
+                  <Separator />
+
+                  <div className="space-y-3 mt-4">
+                    {AIScreeningQA.length === 0 && (
+                      <p className="text-muted-foreground">
+                        AI screening not completed yet
+                      </p>
+                    )}
+
+                    {AIScreeningQA.map((qa, index) => (
+                      <div
+                        key={qa.id}
+                        className="p-3 rounded-md border bg-white"
+                      >
+                        <div className="flex justify-between">
+                          <p className="font-medium">
+                            Q{index + 1}. {qa.question}
+                          </p>
+                          <Badge
+                            variant="outline"
+                            className={
+                              qa.isCorrect
+                                ? "border-green-600 text-green-700"
+                                : "border-red-600 text-red-700"
+                            }
+                          >
+                            {qa.isCorrect ? "Fit" : "Not Fit"}
+                          </Badge>
+                        </div>
+
+                        <div className="flex flex-col gap-2 mt-2">
+                          <p className="text-sm">
+                            Expected answer:{" "}
+                            <span className="font-medium">
+                              {qa.expectedAnswer}
+                            </span>
+                          </p>
+
+                          <p className="text-sm">
+                            Candidate answer:{" "}
+                            <span className="font-medium">
+                              {qa.candidateAnswer ?? "Not answered"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </CardContent>
           </AccordionContent>
         </Card>

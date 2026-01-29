@@ -68,6 +68,7 @@ export async function POST(
     },
     select: {
       id: true,
+      plan: true,
       totalCredits: true,
       creditsUsed: true,
     },
