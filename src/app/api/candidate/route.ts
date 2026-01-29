@@ -120,10 +120,10 @@ export async function POST(req: Request) {
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { candidateId: string } }
+  { params }: { params: Promise<{ candidateId: string }> }
 ) {
   try {
-    const { candidateId } = params;
+    const { candidateId } = await params;
     const body = await req.json();
 
     const {
