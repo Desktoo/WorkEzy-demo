@@ -27,6 +27,7 @@ export default function FilteredCandidateList({
     <div className="space-y-4">
       {filtered.map((application) => (
         <CandidateAccordionCard
+          tab="Filtered"
           key={application.id}
           applicationId={application.id}
           applicationStatus={getDisplayStatus(application.status, "filtered")}

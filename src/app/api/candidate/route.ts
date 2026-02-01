@@ -6,11 +6,10 @@ import { ZodError } from "zod";
 export async function POST(req: Request) {
   try {
     /* --------------------------------
-       1. Parse raw body
-       CHANGE: jobId is NOT part of schema
+       1. Parse body
     --------------------------------- */
     const body = await req.json();
-    const { jobId, ...candidatePayload } = body;
+    const { jobId, filteringAnswers = [], ...candidatePayload } = body;
 
     if (!jobId) {
       return NextResponse.json(
@@ -20,38 +19,60 @@ export async function POST(req: Request) {
     }
 
     /* --------------------------------
-       2. Validate candidate-only data
+       2. Validate candidate data
     --------------------------------- */
-    const validatedData =
-      candidateBackendSchema.parse(candidatePayload);
+    const validated = candidateBackendSchema.parse(candidatePayload);
 
     const {
       skills = [],
       languages = [],
+      dateOfBirth,
       ...candidateData
-    } = validatedData;
+    } = validated;
 
     /* --------------------------------
-       3. Find or create candidate
+       3. Find candidate by phone
     --------------------------------- */
     let candidate = await prisma.candidate.findUnique({
       where: { phoneNumber: candidateData.phoneNumber },
     });
 
+    /* --------------------------------
+       4. Create OR update candidate
+    --------------------------------- */
     if (!candidate) {
       candidate = await prisma.candidate.create({
         data: {
           ...candidateData,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
 
           skills: {
-            create: skills.map((skill: string) => ({
-              name: skill,
-            })),
+            create: skills.map((name: string) => ({ name })),
           },
 
           languages: {
-            create: languages.map((language: string) => ({
-              languageName: language,
+            create: languages.map((languageName: string) => ({
+              languageName,
+            })),
+          },
+        },
+      });
+    } else {
+      candidate = await prisma.candidate.update({
+        where: { id: candidate.id },
+        data: {
+          ...candidateData,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+
+          skills: {
+            deleteMany: {},
+            create: skills.map((name: string) => ({ name })),
+          },
+
+          languages: {
+            deleteMany: {},
+            create: languages.map((languageName: string) => ({
+              languageName,
             })),
           },
         },
@@ -59,22 +80,20 @@ export async function POST(req: Request) {
     }
 
     /* --------------------------------
-       4. Create application
+       5. Create application
+       (unique-safe)
     --------------------------------- */
+    let application;
+
     try {
-      await prisma.application.create({
+      application = await prisma.application.create({
         data: {
           jobId,
           candidateId: candidate.id,
         },
       });
-    } catch (error: unknown) {
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        (error as { code?: string }).code === "P2002"
-      ) {
+    } catch (error: any) {
+      if (error?.code === "P2002") {
         return NextResponse.json(
           {
             success: false,
@@ -83,18 +102,40 @@ export async function POST(req: Request) {
           { status: 409 }
         );
       }
-
       throw error;
     }
 
+    /* --------------------------------
+       6. Store filtering answers
+    --------------------------------- */
+    if (filteringAnswers.length > 0) {
+      await prisma.applicationFilteringAnswer.createMany({
+        data: filteringAnswers.map(
+          (answer: {
+            questionId: string;
+            answer: string;
+          }) => ({
+            applicationId: application.id,
+            questionId: answer.questionId,
+            candidateAnswer: answer.answer,
+            isCorrect: false, 
+          })
+        ),
+      });
+    }
+
+    /* --------------------------------
+       7. Response
+    --------------------------------- */
     return NextResponse.json(
       {
         success: true,
         candidateId: candidate.id,
+        applicationId: application.id,
       },
       { status: 201 }
     );
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Candidate apply error:", error);
 
     if (error instanceof ZodError) {
@@ -117,6 +158,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-
-

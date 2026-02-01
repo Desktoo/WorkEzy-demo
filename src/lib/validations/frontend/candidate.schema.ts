@@ -10,22 +10,27 @@ const ACCEPTED_IMAGE_TYPES = [
 
 /* ---------------- Photo Schema---------------- */
 
-const photoSchema = z
-  .instanceof(File, { message: "Photo is required" })
-  .optional()
+const photoSchema = z.union([
+  z.string(),
+  z.instanceof(File, { message: "Photo is required" })
   .refine((file) => !file || file.size <= MAX_FILE_SIZE, {
     message: "Photo size must be less than 1MB",
   })
   .refine((file) => !file || ACCEPTED_IMAGE_TYPES.includes(file.type), {
     message: "Only JPG, PNG, or WEBP images are allowed",
-  });
-
-
+  })
+  .optional()
+  .or(z.literal(undefined))
+]);
 
 const filteringAnswerSchema = z.object({
   questionId: z.string(),
-  answer: z.enum(["yes", "no"]),
-});  
+  answer: z
+      .enum(["yes", "no"])
+      .refine((val) => val !== undefined , {
+        message: "Select one option",
+      }),
+});
 
 /* ---------------- Candidate Apply Schema ---------------- */
 
@@ -40,10 +45,7 @@ export const candidateApplySchema = z.object({
 
   gender: z.string().min(1, "Gender is required"),
 
-  dateOfBirth: z
-    .string()
-    .min(1, "Date of birth is required")
-    .optional(),
+  dateOfBirth: z.string().min(1, "Date of birth is required").optional(),
 
   age: z
     .number()
@@ -81,9 +83,7 @@ export const candidateApplySchema = z.object({
 
   country: z.string().min(1, "Country is required"),
 
-  filteringAnswers: z
-    .array(filteringAnswerSchema)
-    .optional(),
+  filteringAnswers: z.array(filteringAnswerSchema).optional(),
 });
 
 /* ---------------- Types ---------------- */

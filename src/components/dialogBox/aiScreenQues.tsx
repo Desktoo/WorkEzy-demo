@@ -30,26 +30,33 @@ type AiScreeningQuestion = {
 type Props = {
   jobId: string;
   open: boolean;
-  onClose: () => void;
+  onCloseAction: () => void;
 };
 
 /* --------------------------------
    Component
 --------------------------------- */
 
-export default function AiScreenQuesDialog({ jobId, open, onClose }: Props) {
+export default function AiScreenQuesDialog({
+  jobId,
+  open,
+  onCloseAction,
+}: Props) {
   const [questions, setQuestions] = useState<AiScreeningQuestion[]>([
     { question: "", expectedAnswer: "YES" },
   ]);
 
-  const selectedCandidateIds = useApplicationStore(
-    (s) => s.selectedCandidateIds,
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const selectedApplicationIds = useApplicationStore(
+    (s) => s.selectedApplicationIds,
   );
+  const fetchApplications = useApplicationStore((s) => s.fetchApplications);
+
   const clearSelectedCandidates = useApplicationStore(
     (s) => s.clearSelectedCandidates,
   );
 
-  const { incrementAiAttempt } = useApplicationStore();
   /* --------------------------------
      Handlers
   --------------------------------- */
@@ -79,7 +86,7 @@ export default function AiScreenQuesDialog({ jobId, open, onClose }: Props) {
 
   const submit = async () => {
     // ❌ No candidates selected
-    if (selectedCandidateIds.length === 0) {
+    if (selectedApplicationIds.length === 0) {
       toast.error("No Candidates Selected");
       return;
     }
@@ -94,26 +101,28 @@ export default function AiScreenQuesDialog({ jobId, open, onClose }: Props) {
       return;
     }
 
+    setIsSubmitting(true);
+
     const payload = {
       questions: validQuestions,
-      candidateIds: selectedCandidateIds,
+      applicationIds: selectedApplicationIds,
     };
 
     try {
       await axios.post(`/api/job/${jobId}/ai-screening`, payload);
-      
-      selectedCandidateIds.forEach((candidateId) => {
-        incrementAiAttempt(candidateId);
-      });
+
+      await fetchApplications(jobId);
 
       toast.success("AI Screening started");
 
       clearSelectedCandidates();
 
-      onClose();
+      onCloseAction();
     } catch (error) {
       console.log(" this error occured while starting AI Screening: ", error);
       toast.error("Failed to start AI Screening");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -122,7 +131,7 @@ export default function AiScreenQuesDialog({ jobId, open, onClose }: Props) {
   --------------------------------- */
 
   return (
-    <AlertDialog open={open} onOpenChange={onClose}>
+    <AlertDialog open={open} onOpenChange={onCloseAction}>
       <AlertDialogContent className="max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle>Start AI Screening</AlertDialogTitle>
@@ -193,7 +202,9 @@ export default function AiScreenQuesDialog({ jobId, open, onClose }: Props) {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
 
-          <Button onClick={submit}>Start Screening</Button>
+          <Button onClick={submit} disabled={isSubmitting}>
+            {isSubmitting ? "Starting..." : "Start Screening"}
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

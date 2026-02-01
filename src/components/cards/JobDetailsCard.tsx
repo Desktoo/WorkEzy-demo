@@ -11,11 +11,13 @@ import {
   Users,
   Calendar,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 /* ---------------- Types ---------------- */
 
 type Props = {
   job: {
+    jobId: string,
     jobTitle: string;
     companyName: string;
     createdAt: Date;
@@ -53,6 +55,13 @@ const STATUS_COLOR: Record<Props["job"]["status"], string> = {
 /* ---------------- Component ---------------- */
 
 export function JobDetailsAndScreeningCard({ job }: Props) {
+
+  const router = useRouter();
+
+  const handleViewCandidates = () => {
+    router.push(`/dashboard/job/${job.jobId}/candidates`)
+  }
+
   return (
     <Card className="w-full">
       <CardHeader className="space-y-3">
@@ -95,7 +104,7 @@ export function JobDetailsAndScreeningCard({ job }: Props) {
               {job.status}
             </span>
 
-            <Button variant="outline" className="flex gap-2">
+            <Button variant="outline" className="flex gap-2" onClick={handleViewCandidates}>
               <Users className="h-4 w-4" />
               View Candidates ({job.applicationsCount})
             </Button>

@@ -36,6 +36,7 @@ export type AIScreeningQA = {
 export type Application = {
   id: string;
   status: ApplicationStatus;
+  aiAttempts: number
   candidate: {
     id: string;
     fullName: string;
@@ -65,7 +66,7 @@ type ApplicationStore = {
   filtered: Application[];
   aiScreened: Application[];
 
-  selectedCandidateIds: string[];
+  selectedApplicationIds: string[];
 
   loading: boolean;
   error: string | null;
@@ -73,18 +74,17 @@ type ApplicationStore = {
   fetchApplications: (jobId: string) => Promise<void>;
   markAsInterested: (applicationId: string) => Promise<void>;
 
-  toggleCandidateSelection: (candidateId: string) => void;
+  toggleApplication: (applicationId: string) => void;
   clearSelectedCandidates: () => void;
 
-  aiAttemptsByApplication: Record<string, number>;
-  incrementAiAttempt: (applicationId: string) => void;
+
 };
 
 export const useApplicationStore = create<ApplicationStore>((set) => ({
   all: [],
   filtered: [],
   aiScreened: [],
-  selectedCandidateIds: [],
+  selectedApplicationIds: [],
 
   loading: false,
   error: null,
@@ -107,6 +107,7 @@ export const useApplicationStore = create<ApplicationStore>((set) => ({
         return {
           id: app.id,
           status: app.status,
+          aiAttempts: app.aiAttempts ?? 0,
           candidate: app.candidate,
           filteringStats: {
             totalQuestions: total,
@@ -115,7 +116,7 @@ export const useApplicationStore = create<ApplicationStore>((set) => ({
             isFiltered: app.filteringStats.isFiltered,
           },
           filteringQA: app.filteringQA,
-          aiScreeningQA: app.aiQA ?? [], // ✅ ONLY ADDITION
+          aiScreeningQA: app.aiQA ?? [],
         };
       });
 
@@ -178,25 +179,16 @@ export const useApplicationStore = create<ApplicationStore>((set) => ({
 
   /* ---------------- Selection ---------------- */
 
-  toggleCandidateSelection: (candidateId) =>
+  toggleApplication: (applicationId) =>
     set((state) => ({
-      selectedCandidateIds: state.selectedCandidateIds.includes(candidateId)
-        ? state.selectedCandidateIds.filter((id) => id !== candidateId)
-        : [...state.selectedCandidateIds, candidateId],
+      selectedApplicationIds: state.selectedApplicationIds.includes(applicationId)
+        ? state.selectedApplicationIds.filter((id) => id !== applicationId)
+        : [...state.selectedApplicationIds, applicationId],
     })),
 
-  clearSelectedCandidates: () => set({ selectedCandidateIds: [] }),
+  clearSelectedCandidates: () => set({ selectedApplicationIds: [] }),
 
-  aiAttemptsByApplication: {},
 
-  incrementAiAttempt: (applicationId) =>
-    set((state) => ({
-      aiAttemptsByApplication: {
-        ...state.aiAttemptsByApplication,
-        [applicationId]:
-          (state.aiAttemptsByApplication[applicationId] ?? 0) + 1,
-      },
-    })),
 }));
 
 export function getDisplayStatus(

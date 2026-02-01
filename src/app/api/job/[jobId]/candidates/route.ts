@@ -18,6 +18,7 @@ type FilteringAnswer = {
 type ApplicationWithAnswers = {
   id: string;
   status: string;
+  aiAttempts: number;
   candidate: {
     skills: unknown[];
     languages: unknown[];
@@ -102,6 +103,7 @@ export async function GET(
       return {
         id: application.id,
         status: application.status,
+        aiAttempts: application.aiAttempts,
         candidate: application.candidate,
         filteringStats: {
           totalQuestions: filteringQuestions.length,

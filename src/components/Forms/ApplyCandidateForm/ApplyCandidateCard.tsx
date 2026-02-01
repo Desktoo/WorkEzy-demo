@@ -16,10 +16,7 @@ import {
   useCandidateApplyStore,
 } from "@/store/candidateApply.store";
 
-import {
-  submitCandidateApplication,
-  updateCandidateApplication,
-} from "@/services/candidateApply.service";
+import { submitCandidateApplication } from "@/services/candidateApply.service";
 
 import {
   Card,
@@ -51,9 +48,7 @@ type Props = {
   mode: "apply" | "update";
   candidateId?: string;
   initialData?: CandidateApplyFormValues;
-
-  filteringQuestions?: FilteringQuestion[]; // ✅ passed from server/page
-
+  filteringQuestions?: FilteringQuestion[];
 };
 
 /* ---------------- Component ---------------- */
@@ -62,16 +57,24 @@ export function CandidateApplyCard({
   phoneFromUrl,
   jobId,
   mode,
-  candidateId,
   initialData,
-  filteringQuestions = [],
+  filteringQuestions,
 }: Props) {
   const router = useRouter();
   const { draft, setDraft, clearDraft } = useCandidateApplyStore();
 
+    const questions = filteringQuestions ?? [];
+
+
   const form = useForm<CandidateApplyFormValues>({
     resolver: zodResolver(candidateApplySchema),
-    defaultValues: CandidateApplyFormDefaultState,
+    defaultValues: {
+      ...CandidateApplyFormDefaultState,
+
+      filteringAnswers: questions.map((q) => ({
+        questionId: q.id,
+      })),
+    },
   });
 
   /* ---------------- Persist Draft ---------------- */
@@ -81,12 +84,13 @@ export function CandidateApplyCard({
   };
 
   /* ---------------- Restore Draft / Initial Data ---------------- */
-
   useEffect(() => {
-    console.log("this is filtering Question object: ", filteringQuestions);
-
     if (initialData) {
-      form.reset(initialData);
+      form.reset({...initialData,
+        filteringAnswers: questions.map((q) => ({
+          questionId: q.id,
+        }))
+      });
       return;
     }
 
@@ -99,28 +103,26 @@ export function CandidateApplyCard({
     }
   }, [draft, initialData, phoneFromUrl, mode, form]);
 
-  /* ---------------- Submit ---------------- */
+
+  /* ---------------- Submit (FIXED) ---------------- */
 
   const onSubmit = async (data: CandidateApplyFormValues) => {
     try {
-      if (mode === "apply") {
-        await submitCandidateApplication(data, jobId); // ✅ jobId required
-        clearDraft();
-        toast.success("Application submitted!");
-        router.push(`/apply/${jobId}/thank-you`);
+      await submitCandidateApplication(data, jobId);
+
+      toast.success("Application submitted!");
+      clearDraft();
+      router.push(`/apply/${jobId}/thank-you`);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.toLowerCase().includes("already applied")
+      ) {
+        toast.error("You have already applied for this job");
+        router.replace(`/apply/${jobId}/thank-you`);
         return;
       }
 
-      if (mode === "update") {
-        if (!candidateId) {
-          throw new Error("Candidate ID missing");
-        }
-
-        await updateCandidateApplication(candidateId, data);
-        toast.success("Details updated successfully");
-        router.replace(`/apply/${jobId}/thank-you`);
-      }
-    } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Something went wrong",
       );
@@ -144,16 +146,19 @@ export function CandidateApplyCard({
       </CardHeader>
 
       <CardContent className="space-y-10">
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
-          {/* -------- Personal Info -------- */}
+        <form
+          onSubmit={form.handleSubmit(onSubmit, (errors) => {
+            console.log("FORM ERRORS ❌", errors);
+            toast.error("Fill all the fields");
+          })}
+          className="space-y-10"
+        >
           <PersonalInfoSection form={form} onSectionBlur={persistDraft} />
 
           <Separator />
 
-          {/* -------- Experience -------- */}
           <ExperienceSection form={form} onSectionBlur={persistDraft} />
 
-          {/* -------- Skills / Languages / Notice Period -------- */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <TagInput
               form={form}
@@ -188,22 +193,19 @@ export function CandidateApplyCard({
 
           <Separator />
 
-          {/* -------- Location -------- */}
           <LocationSection form={form} onSectionBlur={persistDraft} />
 
-          {/* -------- Filtering Answers (APPLY ONLY) -------- */}
-          {mode === "apply" && filteringQuestions.length > 0 && (
+          {questions?.length > 0 && (
             <>
               <Separator />
               <FilteringAnswersSection
                 form={form}
-                questions={filteringQuestions}
+                questions={questions}
                 onSectionBlur={persistDraft}
               />
             </>
           )}
 
-          {/* -------- Submit -------- */}
           <Button
             type="submit"
             disabled={form.formState.isSubmitting}
@@ -213,7 +215,7 @@ export function CandidateApplyCard({
               ? "Saving..."
               : mode === "apply"
                 ? "Save and Apply"
-                : "Update Details"}
+                : "Update Details and Apply"}
           </Button>
         </form>
       </CardContent>

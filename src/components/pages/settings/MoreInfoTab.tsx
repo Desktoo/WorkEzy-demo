@@ -1,3 +1,5 @@
+"use client";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,9 +13,38 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { useClerk } from "@clerk/nextjs";
+import axios from "axios";
 import { Building, Mail, Phone } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 export default function MoreInfoTab() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const { signOut } = useClerk();
+
+  const handleDeleteAccount = async () => {
+    try {
+      setLoading(true);
+
+      await axios.delete("/api/account/delete");
+
+      await signOut();
+
+      toast.success("Account deleted successfully");
+
+      // Redirect after delete
+      router.replace("/");
+    } catch (err) {
+      console.error("Delete account failed:", err);
+      toast.error("Failed to delete account");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="flex flex-col gap-4 my-4">
       <Card className="px-4">
@@ -44,9 +75,7 @@ export default function MoreInfoTab() {
           <Mail className="h-6 w-6 text-muted-foreground mt-1" />
           <div className="flex flex-col">
             <span className="font-semibold text-black">Support Email</span>
-            <span className="text-[#BE4145] font-medium">
-              info@workezy.org
-            </span>
+            <span className="text-[#BE4145] font-medium">info@workezy.org</span>
           </div>
         </div>
         {/* Mobile No. */}
@@ -77,30 +106,41 @@ export default function MoreInfoTab() {
             Permanently delete your account and all associated data.
           </label>
         </CardTitle>
+
         <CardDescription className="text-left text-gray-700">
           This action is irreversible. All your job postings, company
-          information, and personal data will be permanently removed. Please be
-          certain before proceeding.
+          information, and personal data will be permanently removed.
         </CardDescription>
-        <div className="max-w-xl">
+
+        <div className="max-w-xl mt-4">
           <AlertDialog>
-            <AlertDialogTrigger>
-              <Button>Delete My Account</Button>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="bg-[#BE4145]">
+                Delete My Account
+              </Button>
             </AlertDialogTrigger>
+
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
                   Permanently delete your account?
                 </AlertDialogTitle>
+
                 <AlertDialogDescription>
-                  Once deleted, your account and all related data—including
-                  company details, job postings, and personal information—will
-                  be permanently erased. This action cannot be reversed.
+                  This action cannot be undone. All your data will be erased.
                 </AlertDialogDescription>
               </AlertDialogHeader>
+
               <AlertDialogFooter>
-                <AlertDialogCancel className="hover:border hover:border-[#BE4145]">Yes, Delete My Account</AlertDialogCancel>
-                <AlertDialogAction>Cancel</AlertDialogAction>
+                <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+
+                <AlertDialogAction
+                  onClick={handleDeleteAccount}
+                  disabled={loading}
+                  className="bg-[#BE4145] hover:bg-red-700"
+                >
+                  {loading ? "Deleting..." : "Yes, delete my account"}
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>

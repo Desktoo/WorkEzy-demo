@@ -72,6 +72,7 @@ export default async function Page(props: { params: Promise<{ jobId: string }> }
         <div className="lg:col-span-2">
           <JobDetailsAndScreeningCard
             job={{
+              jobId: job.id,
               jobTitle: job.jobTitle,
               companyName: employer.companyName,
               createdAt: job.createdAt,

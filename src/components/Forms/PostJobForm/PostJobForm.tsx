@@ -15,7 +15,7 @@ import {
   PostJobFormDefaultState,
   usePostJobStore,
 } from "@/store/job/postJob.store";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import JobTypeAndScheduleSection from "./JobTypeAndScheduleSection";
 import toast from "react-hot-toast";
 import { submitPostJob, updateJob } from "@/services/job.service";
@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/card";
 import axios from "axios";
 import ChoosePlan from "@/components/overlay/choosePlan";
 import { initiateRazorpayPayment } from "@/services/payment.service";
+import { useRouter } from "next/navigation";
 
 type PostJobFormProps = {
   mode?: "post" | "edit";
@@ -43,6 +44,8 @@ export default function PostJobForm({
   });
 
   const [showPlans, setShowPlans] = useState(false);
+  const router = useRouter();
+  const pendingSubmitRef = useRef<PostJobFormValues | null>(null);
 
   useEffect(() => {
     if (mode === "edit" && initialData) {
@@ -59,12 +62,19 @@ export default function PostJobForm({
     try {
       const success = await initiateRazorpayPayment(planId);
 
-      if (success) {
-        setShowPlans(false);
-        return true;
+      if (!success) return false;
+
+      setShowPlans(false);
+
+      if (pendingSubmitRef.current) {
+        await submitPostJob(pendingSubmitRef.current);
+        clearDraft();
+        toast.success("Job posted successfully!");
+        router.push("/dashboard");
+        pendingSubmitRef.current = null;
       }
 
-      return false;
+      return true;
     } catch {
       return false;
     }
@@ -75,24 +85,21 @@ export default function PostJobForm({
       if (mode === "edit" && jobId) {
         await updateJob(jobId, data);
         toast.success("Job updated successfully!");
-      } else {
-        console.log(
-          "this is the final paylaod before going to the server: ",
-          data,
-        );
-
-        const res = await axios.get("/api/job/can-post");
-
-        if (!res.data.canPost) {
-          setShowPlans(true);
-          return;
-        }
-
-        await submitPostJob(data);
-        toast.success("Job posted successfully!");
+        router.push("/dashboard");
+        return;
       }
 
+      const res = await axios.get("/api/job/can-post");
+
+      if (!res.data.canPost) {
+        pendingSubmitRef.current = data;
+        setShowPlans(true);
+        return;
+      }
+      await submitPostJob(data);
+      toast.success("Job Posted successfully!");
       clearDraft();
+      router.push("/dashboard");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Something went wrong",

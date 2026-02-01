@@ -90,12 +90,38 @@ export default function JobListingCard({
       <CardContent className="space-y-6">
         {/* Meta */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
-          <Meta icon={<Building2 className="w-5 h-5" />} label="Location Type" value={locationType} />
-          <Meta icon={<Briefcase className="w-5 h-5" />} label="Experience" value={minExperience} />
-          <Meta icon={<GraduationCap className="w-5 h-5" />} label="Education" value={minEducation} />
-          <Meta icon={<Clock className="w-5 h-5" />} label="Job Type" value={jobType} />
-          <Meta icon={<Calendar className="w-5 h-5" />} label="Posted on" value={formatDate(createdAt)} />
-          <Meta icon={<Calendar className="w-5 h-5" />} label="Expires on" value={formatDate(expiresAt)} />
+          <Meta
+            icon={<Building2 className="w-5 h-5" />}
+            label="Location Type"
+            value={locationType}
+          />
+          <Meta
+            icon={<Briefcase className="w-5 h-5" />}
+            label="Experience"
+            value={minExperience}
+          />
+          <Meta
+            icon={<GraduationCap className="w-5 h-5" />}
+            label="Education"
+            value={minEducation}
+          />
+          <Meta
+            icon={<Clock className="w-5 h-5" />}
+            label="Job Type"
+            value={jobType}
+          />
+          <Meta
+            icon={<Calendar className="w-5 h-5" />}
+            label="Posted on"
+            value={formatDate(createdAt)}
+          />
+          {(status === "ACTIVE" || status === "EXPIRED") && (
+            <Meta
+              icon={<Calendar className="w-5 h-5" />}
+              label={`Expire${status === "EXPIRED" ? "d": "s"} on`}
+              value={formatDate(expiresAt)}
+            />
+          )}
         </div>
 
         {/* Footer */}

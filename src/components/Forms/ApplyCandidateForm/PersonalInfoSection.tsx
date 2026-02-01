@@ -24,7 +24,7 @@ import {
   POST_GRADUATE_DEGREES,
 } from "@/lib/constants/selectOptions";
 import { CandidateApplyFormValues } from "@/lib/validations/frontend/candidate.schema";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
 export default function PersonalInfoSection({
@@ -37,11 +37,24 @@ export default function PersonalInfoSection({
   const {
     register,
     setValue,
+    watch,
     formState: { errors },
     control,
   } = form;
 
+  const photoValue = watch("photo")
+
   const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if(photoValue instanceof File){
+      const objectUrl = URL.createObjectURL(photoValue);
+      setPreview(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl)
+    } else if ( typeof photoValue === "string" && photoValue !== "" ){
+      setPreview(photoValue)
+    }
+  },[photoValue])
 
   // Handle Photo Upload
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,11 +62,6 @@ export default function PersonalInfoSection({
     if (file) {
       // Set the file in RHF for Zod validation
       setValue("photo", file, { shouldValidate: true });
-
-      // Create a local URL for the preview image
-      const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result as string);
-      reader.readAsDataURL(file);
     }
   };
 

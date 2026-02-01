@@ -1,18 +1,9 @@
-"use client";
-
-import { Controller, UseFormReturn } from "react-hook-form";
-import { CandidateApplyFormValues } from "@/lib/validations/frontend/candidate.schema";
-import { Separator } from "@/components/ui/separator";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-
-type FilteringQuestion = {
-  id: string;
-  question: string;
-};
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { CandidateApplyFormValues } from "@/lib/validations/frontend/candidate.schema";
+import { FilteringQuestion } from "@/services/jobApplyMeta.service";
+import { Controller, UseFormReturn } from "react-hook-form";
 
 export function FilteringAnswersSection({
   form,
@@ -23,54 +14,59 @@ export function FilteringAnswersSection({
   questions: FilteringQuestion[];
   onSectionBlur: () => void;
 }) {
-  const { control } = form;
+  const { control, formState: { errors } } = form;
 
   if (!questions.length) return null;
 
   return (
     <section className="space-y-4">
       <h3 className="text-base font-bold text-muted-foreground">
-        Screening Questions
+        Screening Questions <span className="text-red-500">*</span>
       </h3>
 
       <div className="space-y-6">
         {questions.map((q, index) => (
-          <Controller
-            key={q.id}
-            control={control}
-            name={`filteringAnswers.${index}`}
-            render={({ field }) => (
-              <div className="space-y-2">
-                <input type="hidden" value={q.id} />
+          <div key={q.id} className="space-y-4">
+            <p className="text-sm font-medium">{q.question}</p>
 
-                <p className="text-sm font-medium">{q.question}</p>
-
+            <Controller
+              control={control}
+              // This name maps to your Zod schema
+              name={`filteringAnswers.${index}.answer`}
+              render={({ field }) => (
                 <RadioGroup
-                  value={field.value?.answer}
+                  {...field}
+                  // Force a string value to prevent "uncontrolled" error
+                  value={field.value ?? ""} 
                   onValueChange={(val) => {
-                    field.onChange({
-                      questionId: q.id,
-                      answer: val,
-                    });
+                    field.onChange(val);
+                    // Also update the hidden ID manually if not using defaultValues
+                    form.setValue(`filteringAnswers.${index}.questionId`, q.id);
                     onSectionBlur();
                   }}
                   className="flex gap-6"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="yes" id={`${q.id}-yes`} />
-                    <Label htmlFor={`${q.id}-yes`}>Yes</Label>
+                    <RadioGroupItem value="yes" id={`yes-${index}`} />
+                    <Label htmlFor={`yes-${index}`}>Yes</Label>
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="no" id={`${q.id}-no`} />
-                    <Label htmlFor={`${q.id}-no`}>No</Label>
+                    <RadioGroupItem value="no" id={`no-${index}`} />
+                    <Label htmlFor={`no-${index}`}>No</Label>
                   </div>
                 </RadioGroup>
-
-                <Separator />
-              </div>
+              )}
+            />
+            
+            {/* Error Display */}
+            {errors.filteringAnswers?.[index]?.answer && (
+              <p className="text-xs text-red-500">
+                {errors.filteringAnswers[index]?.answer?.message}
+              </p>
             )}
-          />
+            <Separator className="mt-4" />
+          </div>
         ))}
       </div>
     </section>

@@ -29,7 +29,7 @@ export default function CandidateApplyPage() {
 
   function mapCandidateToForm(candidate: any): CandidateApplyFormValues {
     return {
-      photo: undefined, 
+      photo: candidate.photo ?? "",
       fullName: candidate.fullName ?? "",
       email: candidate.email ?? "",
       phoneNumber: candidate.phoneNumber ?? "",
@@ -48,9 +48,6 @@ export default function CandidateApplyPage() {
       city: candidate.city ?? "",
       state: candidate.state ?? "",
       country: candidate.country ?? "India",
-
-      // 🔒 NEVER prefill filtering answers
-      filteringAnswers: [],
     };
   }
 
@@ -113,8 +110,8 @@ export default function CandidateApplyPage() {
         <CandidateApplyCard
           phoneFromUrl={phoneNumberFromUrl ?? undefined}
           jobId={jobId}
+          filteringQuestions={filteringQuestions}
           mode={existingCandidate ? "update" : "apply"}
-          candidateId={existingCandidate?.id}
           initialData={
             existingCandidate
               ? mapCandidateToForm(existingCandidate)

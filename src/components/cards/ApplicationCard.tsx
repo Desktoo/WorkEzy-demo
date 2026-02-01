@@ -38,7 +38,7 @@ export default function ApplicationCard({
 
   const hasCredits = availableCredits > 0;
   const selectedCount = useApplicationStore(
-    (s) => s.selectedCandidateIds.length,
+    (s) => s.selectedApplicationIds.length,
   );
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function ApplicationCard({
               <StartAiScreeningDialog
                 jobId={jobId}
                 open={openAiDialog}
-                onClose={() => setOpenAiDialog(false)}
+                onCloseAction={() => setOpenAiDialog(false)}
               />
             </div>
           )}
@@ -93,14 +93,16 @@ export default function ApplicationCard({
 
       <CardContent className="h-full bg-white contain-layout">
         <Tabs defaultValue="all" className="p-5 flex items-center">
-          <TabsList className="grid grid-cols-3 gap-5 w-2xl">
+          <TabsList className={`grid gap-5 w-2xl ${isPremium ? "grid-cols-3" : "grid-cols-2"} `}>
             <TabsTrigger value="all">All ({all.length})</TabsTrigger>
             <TabsTrigger value="filtered">
               Filtered ({filtered.length})
             </TabsTrigger>
-            <TabsTrigger value="ai">
-              AI Screened({aiScreened.length})
-            </TabsTrigger>
+            {isPremium && (
+              <TabsTrigger value="ai">
+                AI Screened({aiScreened.length})
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="all" className="mt-6 w-full ">

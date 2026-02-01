@@ -56,6 +56,7 @@ export default function AiScreenedCandidateList({ isPremium }: { isPremium: bool
           )}
 
           <CandidateAccordionCard
+            tab="AIScreened"
             isPremium={isPremium}
             applicationId={application.id}
             applicationStatus={getDisplayStatus(application.status, "ai")}

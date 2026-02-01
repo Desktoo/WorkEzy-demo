@@ -42,11 +42,13 @@ export default function CandidateAccordionCard({
   applicationStatus,
   candidate,
   isPremium,
+  tab,
   filteringQA,
   AIScreeningQA = [],
 }: {
   applicationId: string;
   applicationStatus: keyof typeof statusLabelMap;
+  tab: "All" | "Filtered" | "AIScreened";
   candidate: {
     id: string;
     fullName: string;
@@ -89,17 +91,19 @@ export default function CandidateAccordionCard({
   const [showPhone, setShowPhone] = React.useState(false);
   const markAsInterested = useApplicationStore((s) => s.markAsInterested);
 
-  const { selectedCandidateIds, toggleCandidateSelection } =
-    useApplicationStore();
+  const { selectedApplicationIds, toggleApplication } = useApplicationStore();
 
   const isOpen = value === accordionValue;
 
-  const MAX_ATTEMPTS = 2;
-
-  const attempts = useApplicationStore(
-    (s) => s.aiAttemptsByApplication[applicationId] ?? 0,
+  const application = useApplicationStore(
+    React.useCallback(
+      (s) => s.all.find((a) => a.id === applicationId),
+      [applicationId],
+    ),
   );
 
+  const attempts = application?.aiAttempts ?? 0;
+  const MAX_ATTEMPTS = 2;
   const isLimitReached = attempts >= MAX_ATTEMPTS;
 
   return (
@@ -114,13 +118,32 @@ export default function CandidateAccordionCard({
         <Card className="overflow-hidden p-5 gap-0">
           {/* ---------------- Header ---------------- */}
           <div className="flex mb-4 justify-between w-full">
-            {isPremium && (
-              <Checkbox
-                disabled={isLimitReached}
-                checked={selectedCandidateIds.includes(candidate.id)}
-                onCheckedChange={() => toggleCandidateSelection(candidate.id)}
-              />
-            )}
+            <div className="flex flex-col gap-2 items-center">
+              <div className="flex gap-2 items-center">
+                {isPremium && (
+                  <Checkbox
+                    disabled={isLimitReached}
+                    checked={selectedApplicationIds.includes(applicationId)}
+                    onCheckedChange={() => {
+                      if (isLimitReached) return; // ✅ HARD BLOCK
+                      toggleApplication(applicationId);
+                    }}
+                  />
+                )}
+                {isPremium && (
+                  <Badge variant="outline" className="text-xs">
+                    Attempts: {attempts}/{MAX_ATTEMPTS}
+                  </Badge>
+                )}
+              </div>
+              <div>
+                {isLimitReached && (
+                  <p className="text-xs text-red-500 mt-1">
+                    AI screening limit reached
+                  </p>
+                )}
+              </div>
+            </div>
 
             <Badge
               className={`text-white ${statusColorMap[applicationStatus]}`}
@@ -317,7 +340,7 @@ export default function CandidateAccordionCard({
                 </div>
               </section>
 
-              {isPremium && (
+              {isPremium && tab === "AIScreened" && (
                 <section>
                   <p className="font-bold text-base mb-2 mt-6">
                     AI Screening Questions

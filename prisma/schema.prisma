@@ -154,7 +154,9 @@ model Application {
   filteringAnswers ApplicationFilteringAnswer[]
   aiAnswers       CandidateAiAnswer[]
 
-   @@unique([jobId, candidateId])
+  aiAttempts      Int   @default(0)
+
+  @@unique([jobId, candidateId])
 }
 
 model ApplicationFilteringAnswer {
@@ -217,7 +219,38 @@ model CandidateLanguage {
   candidate       Candidate      @relation(fields: [candidateId], references: [id])
 }
 
+model ArchivedUser {
+  id            String   @id @default(uuid())
+
+  originalId    String   // Employer.id or Candidate.id
+  role          ArchivedUserRole
+
+  fullName      String
+  email         String?
+  phoneNumber   String?
+  gender        String?
+
+  city          String?
+  state         String?
+  country       String?
+
+  companyName   String?  // Only for employers
+  designation   String?  // Only for employers
+  industry      String?
+
+  deletedAt     DateTime @default(now())
+
+  @@index([originalId])
+}
+
+
+
 // --- Enums ---
+
+enum ArchivedUserRole {
+  EMPLOYER
+  CANDIDATE
+}
 
 enum EmployerStatus {
   APPROVED

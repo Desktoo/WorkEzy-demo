@@ -19,6 +19,7 @@ export default function AllCandidateList({ isPremium }: { isPremium: boolean }) 
     <div className="space-y-4">
       {all.map((application) => (
         <CandidateAccordionCard
+          tab="All"
           key={application.id}
           applicationId={application.id}
           applicationStatus={getDisplayStatus(application.status, "all")}
