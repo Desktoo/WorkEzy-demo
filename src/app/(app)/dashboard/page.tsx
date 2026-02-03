@@ -13,16 +13,18 @@ import { getEmployerJobs } from "@/services/job.service";
 
 export default function Page() {
   const [jobs, setJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const router = useRouter();
 
   useEffect(() => {
+    setLoading(true);
+
     getEmployerJobs()
       .then(setJobs)
-      .catch(() => toast.error("Failed to load jobs"));
+      .catch(() => toast.error("Failed to load jobs"))
+      .finally(() => setLoading(false));
   }, []);
-
-
 
   return (
     <div className="flex flex-col py-5">
@@ -38,7 +40,13 @@ export default function Page() {
         </Button>
       </div>
 
-      {jobs.length > 0 ? (
+      {loading && (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {!loading && jobs.length > 0 && (
         <Card className="mx-5 my-4 px-4 flex flex-col gap-6">
           <h1 className="text-xl font-bold ml-2">Your Job Postings</h1>
 
@@ -46,7 +54,9 @@ export default function Page() {
             <JobListingCard key={job.id} {...job} />
           ))}
         </Card>
-      ) : (
+      )}
+
+      {!loading && jobs.length === 0 && (
         <NoActiveJobCard
           title="Your Job Postings"
           description="You haven't posted any jobs yet."

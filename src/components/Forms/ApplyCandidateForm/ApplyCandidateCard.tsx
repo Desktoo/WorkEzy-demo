@@ -119,7 +119,6 @@ export function CandidateApplyCard({
         error.message.toLowerCase().includes("already applied")
       ) {
         toast.error("You have already applied for this job");
-        router.replace(`/apply/${jobId}/thank-you`);
         return;
       }
 
